@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.sonarsource.parent</groupId>
+    <artifactId>parent</artifactId>
+    <version>83.0.0.2369</version>
+  </parent>
+
+  <groupId>org.sonarsource.sonarlint.visualstudio.roslyn</groupId>
+  <artifactId>sonarqube-ide-visualstudio-roslyn-parent</artifactId>
+  <version>1.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <name>SonarQube Ide VisualStudio Roslyn Parent</name>
+  <description>Parent POM</description>
+  <inceptionYear>2025</inceptionYear>
+  <organization>
+    <name>SonarSource</name>
+    <url>http://www.sonarsource.com</url>
+  </organization>
+  <licenses>
+    <license>
+      <name>GNU LGPL 3</name>
+      <url>http://www.gnu.org/licenses/lgpl.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <modules>
+    <module>sonarqube-ide-visualstudio-roslyn-plugin</module>
+  </modules>
+
+  <scm>
+    <connection>scm:git@github.com:SonarSource/sonarqube-ide-visualstudio-roslyn.git</connection>
+    <url>https://github.com/SonarSource/sonarqube-ide-visualstudio-roslyn</url>
+  </scm>
+
+  <properties>
+    <gitRepositoryName>sonarqube-ide-visualstudio-roslyn</gitRepositoryName>
+    <artifactsToPublish>${project.groupId}:sonarqube-ide-visualstudio-roslyn-plugin:jar</artifactsToPublish>
+    <junit.version>5.9.1</junit.version>
+    <sonarlint-core.version>10.24.0.81415</sonarlint-core.version>
+    <jdk.min.version>11</jdk.min.version>
+    <license.name>GNU LGPL v3</license.name>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-api</artifactId>
+        <version>${junit.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-engine</artifactId>
+        <version>${junit.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-params</artifactId>
+        <version>${junit.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.assertj</groupId>
+        <artifactId>assertj-core</artifactId>
+        <version>3.23.1</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-core</artifactId>
+        <version>4.8.0</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>commons-io</groupId>
+        <artifactId>commons-io</artifactId>
+        <version>2.18.0</version>
+        <scope>test</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+</project>

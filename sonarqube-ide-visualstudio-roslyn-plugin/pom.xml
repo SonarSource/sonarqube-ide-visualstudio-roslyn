@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.sonarsource.sonarlint.visualstudio.roslyn</groupId>
+    <artifactId>sonarqube-ide-visualstudio-roslyn-parent</artifactId>
+    <version>1.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>sonarqube-ide-visualstudio-roslyn-plugin</artifactId>
+  <packaging>sonar-plugin</packaging>
+
+  <name>SonarQube Ide VisualStudio Roslyn Plugin</name>
+  <description>Code Analyzer based on VisualStudio Roslyn APIs</description>
+
+  <properties>
+    <!-- The following properties should match the pom.xml of sonar-dotnet for the given analyzer version -->
+    <sonar.analyzer.commons>2.18.0.3393</sonar.analyzer.commons>
+    <sonar.version>12.0.0.2960</sonar.version>
+    <sonar.api.impl.version>25.6.0.109173</sonar.api.impl.version>
+
+    <maven.test.redirectTestOutputToFile>true</maven.test.redirectTestOutputToFile>
+    <sonarAnalyzer.directory>${project.build.directory}/analyzer</sonarAnalyzer.directory>
+    <servicesDll.directory>${project.build.directory}/services</servicesDll.directory>
+  </properties>
+
+  <dependencies>
+    <!-- provided at runtime -->
+    <dependency>
+      <groupId>org.sonarsource.api.plugin</groupId>
+      <artifactId>sonar-plugin-api</artifactId>
+      <version>${sonar.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.sonarsource.sonarlint.core</groupId>
+      <artifactId>sonarlint-plugin-api</artifactId>
+      <version>${sonarlint-core.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.code.findbugs</groupId>
+      <artifactId>jsr305</artifactId>
+      <version>3.0.2</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- compiled -->
+    <dependency>
+      <groupId>org.sonarsource.analyzer-commons</groupId>
+      <artifactId>sonar-analyzer-commons</artifactId>
+      <version>${sonar.analyzer.commons}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+      <version>2.8.9</version>
+    </dependency>
+
+    <!-- test dependencies -->
+    <dependency>
+      <groupId>org.sonarsource.api.plugin</groupId>
+      <artifactId>sonar-plugin-api-test-fixtures</artifactId>
+      <version>${sonar.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.sonarsource.sonarqube</groupId>
+      <artifactId>sonar-plugin-api-impl</artifactId>
+      <version>${sonar.api.impl.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>1.2.3</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <version>4.1.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>commons-lang</groupId>
+      <artifactId>commons-lang</artifactId>
+      <version>2.6</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.woodstox</groupId>
+      <artifactId>stax2-api</artifactId>
+      <version>4.2.1</version>
+      <exclusions>
+        <exclusion>
+          <groupId>stax</groupId>
+          <artifactId>stax-api</artifactId>
+        </exclusion>
+      </exclusions>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.staxmate</groupId>
+      <artifactId>staxmate</artifactId>
+      <version>2.0.1</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.codehaus.woodstox</groupId>
+          <artifactId>woodstox-core-asl</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>stax</groupId>
+          <artifactId>stax-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.codehaus.woodstox</groupId>
+          <artifactId>stax2-api</artifactId>
+        </exclusion>
+      </exclusions>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+        <includes>
+          <include>analyzer-version.txt</include>
+        </includes>
+      </resource>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>false</filtering>
+        <excludes>
+          <exclude>analyzer-version.txt</exclude>
+        </excludes>
+      </resource>
+      <resource>
+        <directory>${servicesDll.directory}</directory>
+      </resource>
+    </resources>
+
+    <plugins>
+      <plugin>
+        <groupId>org.sonarsource.sonar-packaging-maven-plugin</groupId>
+        <artifactId>sonar-packaging-maven-plugin</artifactId>
+        <configuration>
+          <pluginName>C# Code Quality and Security (SQVS-Roslyn)</pluginName>
+          <pluginKey>sqvs-roslyn</pluginKey>
+          <pluginClass>org.sonarsource.sonarlint.visualstudio.roslyn.SqvsRoslynPlugin</pluginClass>
+          <skipDependenciesPackaging>true</skipDependenciesPackaging>
+          <sonarLintSupported>true</sonarLintSupported>
+          <pluginApiMinVersion>9.13</pluginApiMinVersion> <!-- set 9.13 as runtime minimal API version, to be able to use the quickfix API -->
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-shade-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <shadedArtifactAttached>false</shadedArtifactAttached>
+              <createDependencyReducedPom>false</createDependencyReducedPom>
+              <minimizeJar>true</minimizeJar>
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/LICENSE*</exclude>
+                    <exclude>META-INF/NOTICE*</exclude>
+                    <exclude>META-INF/*.RSA</exclude>
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>LICENSE*</exclude>
+                    <exclude>NOTICE*</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+
+</project>
