@@ -1,4 +1,4 @@
-sonarlint-visualstudio
+sonarqube-ide-visualstudio-roslyn
 Copyright (C) 2016-2025 SonarSource SA
 mailto:info AT sonarsource DOT com
 
