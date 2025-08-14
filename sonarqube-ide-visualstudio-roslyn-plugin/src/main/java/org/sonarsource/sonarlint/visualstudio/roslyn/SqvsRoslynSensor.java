@@ -55,8 +55,7 @@ public class SqvsRoslynSensor implements Sensor {
     descriptor
       .name("SQVS-Roslyn")
       .onlyOnLanguage(SqvsRoslynPluginConstants.LANGUAGE_KEY)
-      .createIssuesForRuleRepositories(SqvsRoslynPluginConstants.REPOSITORY_KEY)
-      .onlyWhenConfiguration(c -> c.hasKey(SqvsRoslynPluginPropertyDefinitions.getAnalyzerPath()));
+      .createIssuesForRuleRepositories(SqvsRoslynPluginConstants.REPOSITORY_KEY);
   }
 
   @Override

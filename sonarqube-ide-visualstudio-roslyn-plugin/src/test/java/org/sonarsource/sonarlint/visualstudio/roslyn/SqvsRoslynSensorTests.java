@@ -99,14 +99,6 @@ class SqvsRoslynSensorTests {
     assertThat(descriptor.name()).isEqualTo("SQVS-Roslyn");
     assertThat(descriptor.languages()).containsOnly(SqvsRoslynPluginConstants.LANGUAGE_KEY);
     assertThat(descriptor.ruleRepositories()).containsOnly(SqvsRoslynPluginConstants.REPOSITORY_KEY);
-
-    var configWithProp = mock(Configuration.class);
-    when(configWithProp.hasKey(SqvsRoslynPluginPropertyDefinitions.getAnalyzerPath())).thenReturn(true);
-
-    var configWithoutProp = mock(Configuration.class);
-
-    assertThat(descriptor.configurationPredicate()).accepts(configWithProp).rejects(configWithoutProp);
-
   }
 
 //  @Test
