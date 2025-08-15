@@ -35,13 +35,13 @@ import java.util.Collection;
 @SonarLintSide(lifespan = "INSTANCE")
 public class HttpClientHandler {
   private final Configuration configuration;
-  private final JsonRequestParser jsonRequestParser;
+  private final JsonRequestBuilder jsonRequestBuilder;
   private final int port;
   private final String token;
 
-  public HttpClientHandler(Configuration configuration, JsonRequestParser jsonRequestParser) {
+  public HttpClientHandler(Configuration configuration, JsonRequestBuilder jsonRequestBuilder) {
     this.configuration = configuration;
-    this.jsonRequestParser = jsonRequestParser;
+    this.jsonRequestBuilder = jsonRequestBuilder;
     // TODO by https://sonarsource.atlassian.net/browse/SLVS-2470: set port and token with values from configuration
     this.port = 60000;
     this.token = "myToken";
@@ -49,7 +49,7 @@ public class HttpClientHandler {
 
   public HttpResponse<String> sendRequest(Collection<String> fileNames, Collection<ActiveRule> activeRules) throws IOException, InterruptedException {
     var client = HttpClient.newHttpClient();
-    var jsonPayload = jsonRequestParser.buildBody(fileNames, activeRules);
+    var jsonPayload = jsonRequestBuilder.buildBody(fileNames, activeRules);
     var request = createRequest(jsonPayload);
     return client.send(request, HttpResponse.BodyHandlers.ofString());
   }

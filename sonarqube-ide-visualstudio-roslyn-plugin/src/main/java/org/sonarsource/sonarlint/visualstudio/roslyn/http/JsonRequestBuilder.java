@@ -31,8 +31,8 @@ import org.sonarsource.api.sonarlint.SonarLintSide;
 
 @ScannerSide
 @SonarLintSide(lifespan = "INSTANCE")
-public class JsonRequestParser {
-  private static final Logger LOG = Loggers.get(JsonRequestParser.class);
+public class JsonRequestBuilder {
+  private static final Logger LOG = Loggers.get(JsonRequestBuilder.class);
 
   public String buildBody(Collection<String> fileNames, Collection<ActiveRule> activeRules) {
     if (fileNames == null || activeRules == null) {

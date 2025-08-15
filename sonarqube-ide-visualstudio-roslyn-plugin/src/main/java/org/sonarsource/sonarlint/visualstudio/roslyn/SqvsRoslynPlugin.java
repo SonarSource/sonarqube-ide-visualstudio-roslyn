@@ -23,7 +23,7 @@ import org.sonar.api.Plugin;
 import org.sonar.api.SonarProduct;
 import org.sonarsource.sonarlint.visualstudio.roslyn.http.HttpAnalysisRequestHandler;
 import org.sonarsource.sonarlint.visualstudio.roslyn.http.HttpClientHandler;
-import org.sonarsource.sonarlint.visualstudio.roslyn.http.JsonRequestParser;
+import org.sonarsource.sonarlint.visualstudio.roslyn.http.JsonRequestBuilder;
 
 public class SqvsRoslynPlugin implements Plugin {
 
@@ -32,7 +32,7 @@ public class SqvsRoslynPlugin implements Plugin {
         if (context.getRuntime().getProduct() == SonarProduct.SONARLINT) {
             context.addExtensions(
                     SqvsRoslynSensor.class,
-                    JsonRequestParser.class,
+                    JsonRequestBuilder.class,
                     HttpClientHandler.class,
                     HttpAnalysisRequestHandler.class
             );

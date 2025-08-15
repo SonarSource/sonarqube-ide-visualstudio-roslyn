@@ -46,7 +46,7 @@ class HttpClientHandlerTests {
 
   @Test
   void createRequest_setsUriAsExpected() {
-    var httpClientHandler = new HttpClientHandler(configuration, mock(JsonRequestParser.class));
+    var httpClientHandler = new HttpClientHandler(configuration, mock(JsonRequestBuilder.class));
 
     var result = httpClientHandler.createRequest("");
 
@@ -59,7 +59,7 @@ class HttpClientHandlerTests {
 
   @Test
   void sendRequest_callsParserWithExpectedParameters() throws IOException, InterruptedException {
-    JsonRequestParser myMock = mock(JsonRequestParser.class);
+    JsonRequestBuilder myMock = mock(JsonRequestBuilder.class);
     Collection<String> fileNames = List.of("File1.cs", "File2.cs");
     Collection<ActiveRule> activeRules = List.of(createMockActiveRule("S100"));
     var httpClientHandler = new HttpClientHandler(configuration, myMock);

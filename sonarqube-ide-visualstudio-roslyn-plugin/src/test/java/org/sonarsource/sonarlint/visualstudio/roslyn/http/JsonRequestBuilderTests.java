@@ -34,15 +34,15 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
-class JsonRequestParserTests {
+class JsonRequestBuilderTests {
 
-    private JsonRequestParser jsonParser;
+    private JsonRequestBuilder jsonParser;
     @RegisterExtension
     private LogTesterJUnit5 logTester = new LogTesterJUnit5();
 
     @BeforeEach
     void init() {
-        jsonParser = new JsonRequestParser();
+        jsonParser = new JsonRequestBuilder();
     }
 
     @Test
@@ -141,11 +141,11 @@ class JsonRequestParserTests {
     private ActiveRule createMockActiveRule(String ruleId, Map<String, String> params) {
         ActiveRule activeRule = mock(ActiveRule.class);
         RuleKey ruleKey = mock(RuleKey.class);
-        
+
         when(ruleKey.rule()).thenReturn(ruleId);
         when(activeRule.ruleKey()).thenReturn(ruleKey);
         when(activeRule.params()).thenReturn(params);
-        
+
         return activeRule;
     }
 }
