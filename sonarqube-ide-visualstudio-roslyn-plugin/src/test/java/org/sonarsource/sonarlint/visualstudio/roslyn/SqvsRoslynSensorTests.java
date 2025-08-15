@@ -19,10 +19,15 @@
  */
 package org.sonarsource.sonarlint.visualstudio.roslyn;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import javax.annotation.Nullable;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -30,85 +35,97 @@ import org.junit.jupiter.api.io.TempDir;
 import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.TextRange;
+import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
 import org.sonar.api.batch.rule.Severity;
 import org.sonar.api.batch.sensor.internal.DefaultSensorDescriptor;
+import org.sonar.api.batch.sensor.internal.SensorContextTester;
 import org.sonar.api.batch.sensor.issue.NewIssue;
 import org.sonar.api.batch.sensor.issue.NewIssueLocation;
 import org.sonar.api.batch.sensor.issue.NewMessageFormatting;
 import org.sonar.api.batch.sensor.issue.fix.NewInputFileEdit;
 import org.sonar.api.batch.sensor.issue.fix.NewQuickFix;
 import org.sonar.api.batch.sensor.issue.fix.NewTextEdit;
-import org.sonar.api.config.Configuration;
 import org.sonar.api.issue.impact.SoftwareQuality;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.testfixtures.log.LogTesterJUnit5;
+import org.sonarsource.sonarlint.visualstudio.roslyn.http.HttpAnalysisRequestHandler;
 import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.Fix;
 import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.QuickFix;
 import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.QuickFixEdit;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class SqvsRoslynSensorTests {
-  @RegisterExtension
-  LogTesterJUnit5 logTester = new LogTesterJUnit5();
-  private SqvsRoslynSensor underTest;
-  private Path baseDir;
+    @RegisterExtension
+    LogTesterJUnit5 logTester = new LogTesterJUnit5();
+    private HttpAnalysisRequestHandler analysisRequestHandler;
+    private SqvsRoslynSensor underTest;
+    private Path baseDir;
 
-  private static QuickFix mockQuickFix(String message, Fix... fixes) {
-    QuickFix qf = mock(QuickFix.class);
-    when(qf.getMessage()).thenReturn(message);
-    when(qf.getFixes()).thenReturn(fixes);
-    return qf;
-  }
+    private static QuickFix mockQuickFix(String message, Fix... fixes) {
+        QuickFix qf = mock(QuickFix.class);
+        when(qf.getMessage()).thenReturn(message);
+        when(qf.getFixes()).thenReturn(fixes);
+        return qf;
+    }
 
-  private static Fix mockFix(Path filePath, QuickFixEdit... edits) {
-    Fix fix = mock(Fix.class);
-    when(fix.getFilename()).thenReturn(filePath.toString());
-    when(fix.getEdits()).thenReturn(edits);
-    return fix;
-  }
+    private static Fix mockFix(Path filePath, QuickFixEdit... edits) {
+        Fix fix = mock(Fix.class);
+        when(fix.getFilename()).thenReturn(filePath.toString());
+        when(fix.getEdits()).thenReturn(edits);
+        return fix;
+    }
 
-  private static QuickFixEdit mockEdit(int startLine, int startColumn, int endLine, int endColumn, String newText) {
-    QuickFixEdit edit = mock(QuickFixEdit.class);
-    when(edit.getStartLine()).thenReturn(startLine);
-    when(edit.getStartColumn()).thenReturn(startColumn);
-    when(edit.getEndLine()).thenReturn(endLine);
-    when(edit.getEndColumn()).thenReturn(endColumn);
-    when(edit.getNewText()).thenReturn(newText);
-    return edit;
-  }
+    private static QuickFixEdit mockEdit(int startLine, int startColumn, int endLine, int endColumn, String newText) {
+        QuickFixEdit edit = mock(QuickFixEdit.class);
+        when(edit.getStartLine()).thenReturn(startLine);
+        when(edit.getStartColumn()).thenReturn(startColumn);
+        when(edit.getEndLine()).thenReturn(endLine);
+        when(edit.getEndColumn()).thenReturn(endColumn);
+        when(edit.getNewText()).thenReturn(newText);
+        return edit;
+    }
 
-  @BeforeEach
-  void prepare(@TempDir Path tmp) throws Exception {
-    baseDir = tmp.toRealPath();
-    underTest = new SqvsRoslynSensor();
-  }
+    @BeforeEach
+    void prepare(@TempDir Path tmp) throws Exception {
+        analysisRequestHandler = mock(HttpAnalysisRequestHandler.class);
+        baseDir = tmp.toRealPath();
+        underTest = new SqvsRoslynSensor(analysisRequestHandler);
+    }
 
-  @Test
-  void describe() {
-    DefaultSensorDescriptor descriptor = new DefaultSensorDescriptor();
+    @Test
+    void describe() {
+        DefaultSensorDescriptor descriptor = new DefaultSensorDescriptor();
 
-    underTest.describe(descriptor);
+        underTest.describe(descriptor);
 
-    assertThat(descriptor.name()).isEqualTo("SQVS-Roslyn");
-    assertThat(descriptor.languages()).containsOnly(SqvsRoslynPluginConstants.LANGUAGE_KEY);
-    assertThat(descriptor.ruleRepositories()).containsOnly(SqvsRoslynPluginConstants.REPOSITORY_KEY);
-  }
+        assertThat(descriptor.name()).isEqualTo("SQVS-Roslyn");
+        assertThat(descriptor.languages()).containsOnly(SqvsRoslynPluginConstants.LANGUAGE_KEY);
+        assertThat(descriptor.ruleRepositories()).containsOnly(SqvsRoslynPluginConstants.REPOSITORY_KEY);
+    }
 
-//  @Test
-//  void noopIfNoFiles() {
-//    SensorContextTester sensorContext = SensorContextTester.create(baseDir);
-//
-//    underTest.execute(sensorContext);
-//
-//    verifyNoInteractions(mockProtocol, mockServer);
-//  }
+    @Test
+    void noopIfNoFiles() {
+        SensorContextTester sensorContext = SensorContextTester.create(baseDir);
+
+        underTest.execute(sensorContext);
+
+        verifyNoInteractions(analysisRequestHandler);
+    }
+
+    @Test
+    void analyzeCsFile_callsHttpRequest() throws Exception {
+        SensorContextTester sensorContext = SensorContextTester.create(baseDir);
+        var fileName = "Foo.cs";
+        mockInputFile(sensorContext, fileName, "Console.WriteLine(\"Hello World!\");");
+
+        underTest.execute(sensorContext);
+
+        verify(analysisRequestHandler).analyze(argThat(fileNames -> fileNames.stream().anyMatch(file -> file.contains(fileName))),
+                argThat(Collection::isEmpty));
+    }
+
 
 //  @Test
 //  void scanCsFile() throws Exception {
@@ -525,201 +542,217 @@ class SqvsRoslynSensorTests {
 //      .containsExactly(tuple(1, 1, 1, 3, ""), tuple(1, 1, 1, 3, ""), tuple(1, 5, 1, 7, "another"), tuple(2, 11, 2, 13, ""), tuple(2, 15, 2, 17, "another"));
 //  }
 
-  private static class MockSonarLintIssue implements NewIssue {
-    private final List<MockSonarLintQuickFix> quickFixes = new ArrayList<>();
-
-    @Override
-    public NewIssue forRule(RuleKey ruleKey) {
-      return this;
+    private void mockInputFile(SensorContextTester sensorContextTester, String fileName, String content) throws IOException {
+        var file = createInputFile(fileName, content);
+        sensorContextTester.fileSystem().add(file);
     }
 
-    @Override
-    public NewIssue gap(@Nullable Double aDouble) {
-      return this;
+    private InputFile createInputFile(String fileName, String content) throws IOException {
+        Path filePath = baseDir.resolve(fileName);
+        Files.write(filePath, content.getBytes(StandardCharsets.UTF_8));
+
+        return TestInputFileBuilder.create("", "Foo.cs")
+                .setModuleBaseDir(baseDir)
+                .setLanguage(SqvsRoslynPluginConstants.LANGUAGE_KEY)
+                .setCharset(StandardCharsets.UTF_8)
+                .build();
     }
 
-    @Override
-    public NewIssue overrideSeverity(@Nullable Severity severity) {
-      return this;
-    }
-
-    @Override
-    public NewIssue overrideImpact(SoftwareQuality softwareQuality, org.sonar.api.issue.impact.Severity severity) {
-      return null;
-    }
-
-    @Override
-    public NewIssue at(NewIssueLocation newIssueLocation) {
-      return this;
-    }
-
-    @Override
-    public NewIssue addLocation(NewIssueLocation newIssueLocation) {
-      return this;
-    }
-
-    @Override
-    public NewIssue setQuickFixAvailable(boolean b) {
-      return this;
-    }
-
-    @Override
-    public NewIssue addFlow(Iterable<NewIssueLocation> iterable) {
-      return this;
-    }
-
-    @Override
-    public NewIssue addFlow(Iterable<NewIssueLocation> iterable, NewIssue.FlowType flowType, @Nullable String s) {
-      return this;
-    }
-
-    @Override
-    public NewIssueLocation newLocation() {
-      return new MockIssueLocation();
-    }
-
-    @Override
-    public void save() {
-      // no op
-    }
-
-    @Override
-    public NewIssue setRuleDescriptionContextKey(@Nullable String s) {
-      return this;
-    }
-
-    @Override
-    public NewIssue setCodeVariants(@Nullable Iterable<String> iterable) {
-      return null;
-    }
-
-    @Override
-    public MockSonarLintQuickFix newQuickFix() {
-      return new MockSonarLintQuickFix();
-    }
-
-    @Override
-    public NewIssue addQuickFix(org.sonar.api.batch.sensor.issue.fix.NewQuickFix newQuickFix) {
-      quickFixes.add((MockSonarLintQuickFix) newQuickFix);
-      return this;
-    }
-
-    public List<MockSonarLintQuickFix> getQuickFixes() {
-      return quickFixes;
-    }
-
-    private static class MockSonarLintQuickFix implements NewQuickFix {
-      private String message;
-      private final List<MockSonarLintInputFileEdit> inputFileEdits = new ArrayList<>();
-
-      @Override
-      public NewQuickFix message(String message) {
-        this.message = message;
-        return this;
-      }
-
-      @Override
-      public NewInputFileEdit newInputFileEdit() {
-        return new MockSonarLintInputFileEdit();
-      }
-
-      @Override
-      public NewQuickFix addInputFileEdit(NewInputFileEdit newInputFileEdit) {
-        inputFileEdits.add((MockSonarLintInputFileEdit) newInputFileEdit);
-        return this;
-      }
-
-      public String getMessage() {
-        return message;
-      }
-
-      public List<MockSonarLintInputFileEdit> getInputFileEdits() {
-        return inputFileEdits;
-      }
-
-      private static class MockSonarLintInputFileEdit implements NewInputFileEdit {
-        private InputFile inputFile;
-        private final List<MockSonarLintTextEdit> textEdits = new ArrayList<>();
+    private static class MockSonarLintIssue implements NewIssue {
+        private final List<MockSonarLintQuickFix> quickFixes = new ArrayList<>();
 
         @Override
-        public NewInputFileEdit on(InputFile inputFile) {
-          this.inputFile = inputFile;
-          return this;
-        }
-
-        @Override
-        public NewTextEdit newTextEdit() {
-          return new MockSonarLintTextEdit();
-        }
-
-        @Override
-        public NewInputFileEdit addTextEdit(NewTextEdit newTextEdit) {
-          textEdits.add((MockSonarLintTextEdit) newTextEdit);
-          return this;
-        }
-
-        public InputFile getInputFile() {
-          return inputFile;
-        }
-
-        public List<MockSonarLintTextEdit> getTextEdits() {
-          return textEdits;
-        }
-
-        private static class MockSonarLintTextEdit implements NewTextEdit {
-          private TextRange textRange;
-          private String newText;
-
-          @Override
-          public NewTextEdit at(TextRange textRange) {
-            this.textRange = textRange;
+        public NewIssue forRule(RuleKey ruleKey) {
             return this;
-          }
-
-          @Override
-          public NewTextEdit withNewText(String newText) {
-            this.newText = newText;
-            return this;
-          }
-
-          public TextRange getTextRange() {
-            return textRange;
-          }
-
-          public String getNewText() {
-            return newText;
-          }
         }
-      }
-    }
-  }
 
-  private static class MockIssueLocation implements NewIssueLocation {
+        @Override
+        public NewIssue gap(@Nullable Double aDouble) {
+            return this;
+        }
 
-    @Override
-    public NewIssueLocation on(InputComponent inputComponent) {
-      return this;
+        @Override
+        public NewIssue overrideSeverity(@Nullable Severity severity) {
+            return this;
+        }
+
+        @Override
+        public NewIssue overrideImpact(SoftwareQuality softwareQuality, org.sonar.api.issue.impact.Severity severity) {
+            return null;
+        }
+
+        @Override
+        public NewIssue at(NewIssueLocation newIssueLocation) {
+            return this;
+        }
+
+        @Override
+        public NewIssue addLocation(NewIssueLocation newIssueLocation) {
+            return this;
+        }
+
+        @Override
+        public NewIssue setQuickFixAvailable(boolean b) {
+            return this;
+        }
+
+        @Override
+        public NewIssue addFlow(Iterable<NewIssueLocation> iterable) {
+            return this;
+        }
+
+        @Override
+        public NewIssue addFlow(Iterable<NewIssueLocation> iterable, NewIssue.FlowType flowType, @Nullable String s) {
+            return this;
+        }
+
+        @Override
+        public NewIssueLocation newLocation() {
+            return new MockIssueLocation();
+        }
+
+        @Override
+        public void save() {
+            // no op
+        }
+
+        @Override
+        public NewIssue setRuleDescriptionContextKey(@Nullable String s) {
+            return this;
+        }
+
+        @Override
+        public NewIssue setCodeVariants(@Nullable Iterable<String> iterable) {
+            return null;
+        }
+
+        @Override
+        public MockSonarLintQuickFix newQuickFix() {
+            return new MockSonarLintQuickFix();
+        }
+
+        @Override
+        public NewIssue addQuickFix(org.sonar.api.batch.sensor.issue.fix.NewQuickFix newQuickFix) {
+            quickFixes.add((MockSonarLintQuickFix) newQuickFix);
+            return this;
+        }
+
+        public List<MockSonarLintQuickFix> getQuickFixes() {
+            return quickFixes;
+        }
+
+        private static class MockSonarLintQuickFix implements NewQuickFix {
+            private String message;
+            private final List<MockSonarLintInputFileEdit> inputFileEdits = new ArrayList<>();
+
+            @Override
+            public NewQuickFix message(String message) {
+                this.message = message;
+                return this;
+            }
+
+            @Override
+            public NewInputFileEdit newInputFileEdit() {
+                return new MockSonarLintInputFileEdit();
+            }
+
+            @Override
+            public NewQuickFix addInputFileEdit(NewInputFileEdit newInputFileEdit) {
+                inputFileEdits.add((MockSonarLintInputFileEdit) newInputFileEdit);
+                return this;
+            }
+
+            public String getMessage() {
+                return message;
+            }
+
+            public List<MockSonarLintInputFileEdit> getInputFileEdits() {
+                return inputFileEdits;
+            }
+
+            private static class MockSonarLintInputFileEdit implements NewInputFileEdit {
+                private InputFile inputFile;
+                private final List<MockSonarLintTextEdit> textEdits = new ArrayList<>();
+
+                @Override
+                public NewInputFileEdit on(InputFile inputFile) {
+                    this.inputFile = inputFile;
+                    return this;
+                }
+
+                @Override
+                public NewTextEdit newTextEdit() {
+                    return new MockSonarLintTextEdit();
+                }
+
+                @Override
+                public NewInputFileEdit addTextEdit(NewTextEdit newTextEdit) {
+                    textEdits.add((MockSonarLintTextEdit) newTextEdit);
+                    return this;
+                }
+
+                public InputFile getInputFile() {
+                    return inputFile;
+                }
+
+                public List<MockSonarLintTextEdit> getTextEdits() {
+                    return textEdits;
+                }
+
+                private static class MockSonarLintTextEdit implements NewTextEdit {
+                    private TextRange textRange;
+                    private String newText;
+
+                    @Override
+                    public NewTextEdit at(TextRange textRange) {
+                        this.textRange = textRange;
+                        return this;
+                    }
+
+                    @Override
+                    public NewTextEdit withNewText(String newText) {
+                        this.newText = newText;
+                        return this;
+                    }
+
+                    public TextRange getTextRange() {
+                        return textRange;
+                    }
+
+                    public String getNewText() {
+                        return newText;
+                    }
+                }
+            }
+        }
     }
 
-    @Override
-    public NewIssueLocation at(TextRange textRange) {
-      return this;
-    }
+    private static class MockIssueLocation implements NewIssueLocation {
 
-    @Override
-    public NewIssueLocation message(String s) {
-      return this;
-    }
+        @Override
+        public NewIssueLocation on(InputComponent inputComponent) {
+            return this;
+        }
 
-    @Override
-    public NewIssueLocation message(String message, List<NewMessageFormatting> newMessageFormatting) {
-      return this;
-    }
+        @Override
+        public NewIssueLocation at(TextRange textRange) {
+            return this;
+        }
 
-    @Override
-    public NewMessageFormatting newMessageFormatting() {
-      throw new UnsupportedOperationException();
+        @Override
+        public NewIssueLocation message(String s) {
+            return this;
+        }
+
+        @Override
+        public NewIssueLocation message(String message, List<NewMessageFormatting> newMessageFormatting) {
+            return this;
+        }
+
+        @Override
+        public NewMessageFormatting newMessageFormatting() {
+            throw new UnsupportedOperationException();
+        }
     }
-  }
 
 }
