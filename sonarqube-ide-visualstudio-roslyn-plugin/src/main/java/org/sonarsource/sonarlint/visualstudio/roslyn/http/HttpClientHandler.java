@@ -34,33 +34,33 @@ import java.util.Collection;
 @ScannerSide
 @SonarLintSide(lifespan = "INSTANCE")
 public class HttpClientHandler {
-    private final Configuration configuration;
-    private JsonRequestParser jsonRequestParser;
-    private final int port;
-    private final String token;
+  private final Configuration configuration;
+  private final JsonRequestParser jsonRequestParser;
+  private final int port;
+  private final String token;
 
-    public HttpClientHandler(Configuration configuration, JsonRequestParser jsonRequestParser) {
-        this.configuration = configuration;
-        this.jsonRequestParser = jsonRequestParser;
-        // TODO by https://sonarsource.atlassian.net/browse/SLVS-2470: set port and token with values from configuration
-        this.port = 60000;
-        this.token = "myToken";
-    }
+  public HttpClientHandler(Configuration configuration, JsonRequestParser jsonRequestParser) {
+    this.configuration = configuration;
+    this.jsonRequestParser = jsonRequestParser;
+    // TODO by https://sonarsource.atlassian.net/browse/SLVS-2470: set port and token with values from configuration
+    this.port = 60000;
+    this.token = "myToken";
+  }
 
-    public HttpResponse<String> sendRequest(Collection<String> fileNames, Collection<ActiveRule> activeRules) throws IOException, InterruptedException {
-        var client = HttpClient.newHttpClient();
-        var jsonPayload = jsonRequestParser.buildBody(fileNames, activeRules);
-        var request = createRequest(jsonPayload);
-        return client.send(request, HttpResponse.BodyHandlers.ofString());
-    }
+  public HttpResponse<String> sendRequest(Collection<String> fileNames, Collection<ActiveRule> activeRules) throws IOException, InterruptedException {
+    var client = HttpClient.newHttpClient();
+    var jsonPayload = jsonRequestParser.buildBody(fileNames, activeRules);
+    var request = createRequest(jsonPayload);
+    return client.send(request, HttpResponse.BodyHandlers.ofString());
+  }
 
-    public HttpRequest createRequest(String jsonPayload) {
-        var uri = String.format("http://localhost:%d/analyze", port);
-        return HttpRequest.newBuilder()
-                .uri(URI.create(uri))
-                .header("Content-Type", "application/json")
-                .header("X-Auth-Token", token)
-                .POST(HttpRequest.BodyPublishers.ofString(jsonPayload))
-                .build();
-    }
+  public HttpRequest createRequest(String jsonPayload) {
+    var uri = String.format("http://localhost:%d/analyze", port);
+    return HttpRequest.newBuilder()
+      .uri(URI.create(uri))
+      .header("Content-Type", "application/json")
+      .header("X-Auth-Token", token)
+      .POST(HttpRequest.BodyPublishers.ofString(jsonPayload))
+      .build();
+  }
 }

@@ -43,115 +43,115 @@ import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.QuickFixEdit;
 
 public class SqvsRoslynSensor implements Sensor {
 
-    private static final Logger LOG = Loggers.get(SqvsRoslynSensor.class);
-    private final HttpAnalysisRequestHandler httpRequestHandler;
+  private static final Logger LOG = Loggers.get(SqvsRoslynSensor.class);
+  private final HttpAnalysisRequestHandler httpRequestHandler;
 
-    public SqvsRoslynSensor(HttpAnalysisRequestHandler httpRequestHandler) {
-        this.httpRequestHandler = httpRequestHandler;
+  public SqvsRoslynSensor(HttpAnalysisRequestHandler httpRequestHandler) {
+    this.httpRequestHandler = httpRequestHandler;
+  }
+
+  @Override
+  public void describe(SensorDescriptor descriptor) {
+    descriptor
+      .name("SQVS-Roslyn")
+      .onlyOnLanguage(SqvsRoslynPluginConstants.LANGUAGE_KEY)
+      .createIssuesForRuleRepositories(SqvsRoslynPluginConstants.REPOSITORY_KEY);
+  }
+
+  @Override
+  public void execute(SensorContext context) {
+    FilePredicate predicate = context.fileSystem().predicates().hasLanguage(SqvsRoslynPluginConstants.LANGUAGE_KEY);
+    if (!context.fileSystem().hasFiles(predicate)) {
+      return;
     }
 
-    @Override
-    public void describe(SensorDescriptor descriptor) {
-        descriptor
-                .name("SQVS-Roslyn")
-                .onlyOnLanguage(SqvsRoslynPluginConstants.LANGUAGE_KEY)
-                .createIssuesForRuleRepositories(SqvsRoslynPluginConstants.REPOSITORY_KEY);
+    try {
+      analyze(context, predicate);
+    } catch (Exception e) {
+      throw new IllegalStateException("Analysis failed: " + e.getMessage(), e.getCause());
     }
+  }
 
-    @Override
-    public void execute(SensorContext context) {
-        FilePredicate predicate = context.fileSystem().predicates().hasLanguage(SqvsRoslynPluginConstants.LANGUAGE_KEY);
-        if (!context.fileSystem().hasFiles(predicate)) {
-            return;
+  private void analyze(SensorContext context, FilePredicate predicate) {
+    var inputFiles = StreamSupport.stream(
+      context.fileSystem().inputFiles(predicate).spliterator(), false)
+      .map(InputFile::absolutePath)
+      .collect(Collectors.toList());
+    var activeRules = context.activeRules().findByRepository(SqvsRoslynPluginConstants.REPOSITORY_KEY);
+    httpRequestHandler.analyze(inputFiles, activeRules);
+    // TODO by https://sonarsource.atlassian.net/browse/SLVS-2470 send analysis results to SlCore
+    // handle(context, diagnostic);
+  }
+
+  private static void handle(SensorContext context, Diagnostic diag) {
+    var ruleKey = RuleKey.of(SqvsRoslynPluginConstants.REPOSITORY_KEY, diag.getId());
+    if (context.activeRules().find(ruleKey) != null) {
+      var diagFilePath = Paths.get(diag.getFilename());
+      var diagInputFile = findInputFile(context, diagFilePath);
+      if (diagInputFile != null) {
+        var newIssue = context.newIssue();
+        newIssue
+          .forRule(ruleKey)
+          .at(createLocation(newIssue, diag, diagInputFile));
+        handleSecondaryLocations(context, diag, newIssue);
+        handleQuickFixes(context, diag, newIssue);
+        newIssue.save();
+      }
+    }
+  }
+
+  private static void handleQuickFixes(SensorContext context, Diagnostic diag, NewIssue newIssue) {
+    var quickFixes = diag.getQuickFixes();
+    if (quickFixes != null && quickFixes.length > 0) {
+      newIssue.setQuickFixAvailable(true);
+      for (var quickFix : quickFixes) {
+        handleQuickFix(context, quickFix, newIssue);
+      }
+    }
+  }
+
+  static void handleQuickFix(SensorContext context, QuickFix quickFix, NewIssue newIssue) {
+    var newQuickFix = newIssue.newQuickFix();
+    newQuickFix.message(quickFix.getMessage());
+    for (Fix fix : quickFix.getFixes()) {
+      var fixInputFile = findInputFile(context, Paths.get(fix.getFilename()));
+      if (fixInputFile != null) {
+        var newInputFileEdit = newQuickFix.newInputFileEdit()
+          .on(fixInputFile);
+        for (QuickFixEdit edit : fix.getEdits()) {
+          var newTextEdit = newInputFileEdit.newTextEdit()
+            .at(fixInputFile.newRange(edit.getStartLine(), edit.getStartColumn() - 1, edit.getEndLine(), edit.getEndColumn() - 1))
+            .withNewText(edit.getNewText());
+          newInputFileEdit.addTextEdit(newTextEdit);
         }
+        newQuickFix.addInputFileEdit(newInputFileEdit);
+      }
+    }
+    newIssue.addQuickFix(newQuickFix);
+  }
 
-        try {
-            analyze(context, predicate);
-        } catch (Exception e) {
-            throw new IllegalStateException("Analysis failed: " + e.getMessage(), e.getCause());
+  private static void handleSecondaryLocations(SensorContext context, Diagnostic diag, NewIssue newIssue) {
+    var additionalLocations = diag.getAdditionalLocations();
+    if (additionalLocations != null) {
+      for (var additionalLocation : additionalLocations) {
+        var additionalFilePath = Paths.get(additionalLocation.getFilename());
+        var additionalFilePathInputFile = findInputFile(context, additionalFilePath);
+        if (additionalFilePathInputFile != null) {
+          newIssue.addLocation(createLocation(newIssue, additionalLocation, additionalFilePathInputFile));
         }
+      }
     }
+  }
 
-    private void analyze(SensorContext context, FilePredicate predicate) {
-        var inputFiles = StreamSupport.stream(
-                        context.fileSystem().inputFiles(predicate).spliterator(), false)
-                .map(InputFile::absolutePath)
-                .collect(Collectors.toList());
-        var activeRules = context.activeRules().findByRepository(SqvsRoslynPluginConstants.REPOSITORY_KEY);
-        httpRequestHandler.analyze(inputFiles, activeRules);
-        // TODO by https://sonarsource.atlassian.net/browse/SLVS-2470 send analysis results to SlCore
-        //handle(context, diagnostic);
-    }
+  private static InputFile findInputFile(SensorContext context, Path filePath) {
+    return context.fileSystem().inputFile(context.fileSystem().predicates().is(filePath.toFile()));
+  }
 
-    private static void handle(SensorContext context, Diagnostic diag) {
-        var ruleKey = RuleKey.of(SqvsRoslynPluginConstants.REPOSITORY_KEY, diag.getId());
-        if (context.activeRules().find(ruleKey) != null) {
-            var diagFilePath = Paths.get(diag.getFilename());
-            var diagInputFile = findInputFile(context, diagFilePath);
-            if (diagInputFile != null) {
-                var newIssue = context.newIssue();
-                newIssue
-                        .forRule(ruleKey)
-                        .at(createLocation(newIssue, diag, diagInputFile));
-                handleSecondaryLocations(context, diag, newIssue);
-                handleQuickFixes(context, diag, newIssue);
-                newIssue.save();
-            }
-        }
-    }
-
-    private static void handleQuickFixes(SensorContext context, Diagnostic diag, NewIssue newIssue) {
-        var quickFixes = diag.getQuickFixes();
-        if (quickFixes != null && quickFixes.length > 0) {
-            newIssue.setQuickFixAvailable(true);
-            for (var quickFix : quickFixes) {
-                handleQuickFix(context, quickFix, newIssue);
-            }
-        }
-    }
-
-    static void handleQuickFix(SensorContext context, QuickFix quickFix, NewIssue newIssue) {
-        var newQuickFix = newIssue.newQuickFix();
-        newQuickFix.message(quickFix.getMessage());
-        for (Fix fix : quickFix.getFixes()) {
-            var fixInputFile = findInputFile(context, Paths.get(fix.getFilename()));
-            if (fixInputFile != null) {
-                var newInputFileEdit = newQuickFix.newInputFileEdit()
-                        .on(fixInputFile);
-                for (QuickFixEdit edit : fix.getEdits()) {
-                    var newTextEdit = newInputFileEdit.newTextEdit()
-                            .at(fixInputFile.newRange(edit.getStartLine(), edit.getStartColumn() - 1, edit.getEndLine(), edit.getEndColumn() - 1))
-                            .withNewText(edit.getNewText());
-                    newInputFileEdit.addTextEdit(newTextEdit);
-                }
-                newQuickFix.addInputFileEdit(newInputFileEdit);
-            }
-        }
-        newIssue.addQuickFix(newQuickFix);
-    }
-
-    private static void handleSecondaryLocations(SensorContext context, Diagnostic diag, NewIssue newIssue) {
-        var additionalLocations = diag.getAdditionalLocations();
-        if (additionalLocations != null) {
-            for (var additionalLocation : additionalLocations) {
-                var additionalFilePath = Paths.get(additionalLocation.getFilename());
-                var additionalFilePathInputFile = findInputFile(context, additionalFilePath);
-                if (additionalFilePathInputFile != null) {
-                    newIssue.addLocation(createLocation(newIssue, additionalLocation, additionalFilePathInputFile));
-                }
-            }
-        }
-    }
-
-    private static InputFile findInputFile(SensorContext context, Path filePath) {
-        return context.fileSystem().inputFile(context.fileSystem().predicates().is(filePath.toFile()));
-    }
-
-    private static NewIssueLocation createLocation(NewIssue newIssue, DiagnosticLocation location, InputFile inputFile) {
-        return newIssue.newLocation()
-                .on(inputFile)
-                .at(inputFile.newRange(location.getLine(), location.getColumn() - 1, location.getEndLine(), location.getEndColumn() - 1))
-                .message(location.getText());
-    }
+  private static NewIssueLocation createLocation(NewIssue newIssue, DiagnosticLocation location, InputFile inputFile) {
+    return newIssue.newLocation()
+      .on(inputFile)
+      .at(inputFile.newRange(location.getLine(), location.getColumn() - 1, location.getEndLine(), location.getEndColumn() - 1))
+      .message(location.getText());
+  }
 
 }

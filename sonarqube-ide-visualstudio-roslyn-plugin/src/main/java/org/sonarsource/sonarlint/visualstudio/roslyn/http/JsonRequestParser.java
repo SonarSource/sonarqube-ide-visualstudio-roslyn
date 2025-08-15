@@ -19,58 +19,55 @@
  */
 package org.sonarsource.sonarlint.visualstudio.roslyn.http;
 
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import java.util.Collection;
+import java.util.Map;
 import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.scanner.ScannerSide;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.api.sonarlint.SonarLintSide;
-import org.sonarsource.sonarlint.visualstudio.roslyn.SqvsRoslynSensor;
-
-import java.util.Collection;
-import java.util.Map;
 
 @ScannerSide
 @SonarLintSide(lifespan = "INSTANCE")
 public class JsonRequestParser {
-    private static final Logger LOG = Loggers.get(JsonRequestParser.class);
+  private static final Logger LOG = Loggers.get(JsonRequestParser.class);
 
-    public String buildBody(Collection<String> fileNames, Collection<ActiveRule> activeRules) {
-        if(fileNames == null || activeRules == null){
-            LOG.warn("fileNames or activeRules are null");
-            return "";
-        }
-        var bodyJsonObj = new JsonObject();
-        bodyJsonObj.add("fileNames", buildFileNames(fileNames));
-        bodyJsonObj.add("activeRules", buildRulesConfig(activeRules));
-        return bodyJsonObj.toString();
+  public String buildBody(Collection<String> fileNames, Collection<ActiveRule> activeRules) {
+    if (fileNames == null || activeRules == null) {
+      LOG.warn("fileNames or activeRules are null");
+      return "";
+    }
+    var bodyJsonObj = new JsonObject();
+    bodyJsonObj.add("fileNames", buildFileNames(fileNames));
+    bodyJsonObj.add("activeRules", buildRulesConfig(activeRules));
+    return bodyJsonObj.toString();
+  }
+
+  private static JsonArray buildFileNames(Collection<String> fileNames) {
+    JsonArray filesJson = new JsonArray();
+    for (String fileName : fileNames) {
+      filesJson.add(fileName);
     }
 
-    private static JsonArray buildFileNames(Collection<String> fileNames) {
-        JsonArray filesJson = new JsonArray();
-        for (String fileName : fileNames) {
-            filesJson.add(fileName);
-        }
+    return filesJson;
+  }
 
-        return filesJson;
-    }
-
-    private static JsonArray buildRulesConfig(Collection<ActiveRule> activeRules) {
-        JsonArray rulesJson = new JsonArray();
-        for (ActiveRule activeRule : activeRules) {
-            JsonObject ruleJson = new JsonObject();
-            ruleJson.addProperty("ruleId", activeRule.ruleKey().rule());
-            if (!activeRule.params().isEmpty()) {
-                JsonObject paramsJson = new JsonObject();
-                for (Map.Entry<String, String> param : activeRule.params().entrySet()) {
-                    paramsJson.addProperty(param.getKey(), param.getValue());
-                }
-                ruleJson.add("params", paramsJson);
-            }
-            rulesJson.add(ruleJson);
+  private static JsonArray buildRulesConfig(Collection<ActiveRule> activeRules) {
+    JsonArray rulesJson = new JsonArray();
+    for (ActiveRule activeRule : activeRules) {
+      JsonObject ruleJson = new JsonObject();
+      ruleJson.addProperty("ruleId", activeRule.ruleKey().rule());
+      if (!activeRule.params().isEmpty()) {
+        JsonObject paramsJson = new JsonObject();
+        for (Map.Entry<String, String> param : activeRule.params().entrySet()) {
+          paramsJson.addProperty(param.getKey(), param.getValue());
         }
-        return rulesJson;
+        ruleJson.add("params", paramsJson);
+      }
+      rulesJson.add(ruleJson);
     }
+    return rulesJson;
+  }
 }

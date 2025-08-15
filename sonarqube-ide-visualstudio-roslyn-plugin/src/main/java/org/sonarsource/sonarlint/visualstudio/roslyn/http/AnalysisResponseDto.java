@@ -25,11 +25,11 @@ import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.Diagnostic;
 import javax.annotation.Nullable;
 
 public class AnalysisResponseDto {
-    @SerializedName("Diagnostics")
-    private Diagnostic[] diagnostics;
+  @SerializedName("Diagnostics")
+  private Diagnostic[] diagnostics;
 
-    @Nullable
-    public Diagnostic[] diagnostics() {
-        return diagnostics;
-    }
+  @Nullable
+  public Diagnostic[] diagnostics() {
+    return diagnostics;
+  }
 }

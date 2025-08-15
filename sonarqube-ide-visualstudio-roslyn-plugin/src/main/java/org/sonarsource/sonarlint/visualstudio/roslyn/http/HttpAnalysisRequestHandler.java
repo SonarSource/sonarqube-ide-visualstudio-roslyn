@@ -35,35 +35,35 @@ import java.util.List;
 @ScannerSide
 @SonarLintSide(lifespan = "INSTANCE")
 public class HttpAnalysisRequestHandler {
-    private static final Logger LOG = Loggers.get(HttpAnalysisRequestHandler.class);
-    private HttpClientHandler httpClientFactory;
+  private static final Logger LOG = Loggers.get(HttpAnalysisRequestHandler.class);
+  private HttpClientHandler httpClientFactory;
 
-    public HttpAnalysisRequestHandler(HttpClientHandler httpClientFactory) {
-        this.httpClientFactory = httpClientFactory;
-    }
+  public HttpAnalysisRequestHandler(HttpClientHandler httpClientFactory) {
+    this.httpClientFactory = httpClientFactory;
+  }
 
-    public Collection<Diagnostic> analyze(Collection<String> fileNames, Collection<ActiveRule> activeRules) {
-        Collection<Diagnostic> diagnostics = new ArrayList<>();
-        try {
-            var response = httpClientFactory.sendRequest(fileNames, activeRules);
-            if (response.statusCode() != HttpURLConnection.HTTP_OK) {
-                LOG.error("Response from server is {}.", response.statusCode());
-                return diagnostics;
-            }
-
-            var responseDto = new Gson().fromJson(response.body(), AnalysisResponseDto.class);
-            if (responseDto != null) {
-                diagnostics = List.of(responseDto.diagnostics());
-                // TODO by https://sonarsource.atlassian.net/browse/SLVS-2470: remove log that is here only for testing purposes
-                LOG.info("sqvs-roslyn: received diagnostics {}.", diagnostics.stream().count());
-            }
-        } catch (InterruptedException e) {
-            LOG.debug("Interrupted!", e);
-            Thread.currentThread().interrupt();
-        } catch (Exception e) {
-            LOG.error("Response crashed due to: " + e.getMessage() + e.fillInStackTrace());
-        }
-
+  public Collection<Diagnostic> analyze(Collection<String> fileNames, Collection<ActiveRule> activeRules) {
+    Collection<Diagnostic> diagnostics = new ArrayList<>();
+    try {
+      var response = httpClientFactory.sendRequest(fileNames, activeRules);
+      if (response.statusCode() != HttpURLConnection.HTTP_OK) {
+        LOG.error("Response from server is {}.", response.statusCode());
         return diagnostics;
+      }
+
+      var responseDto = new Gson().fromJson(response.body(), AnalysisResponseDto.class);
+      if (responseDto != null) {
+        diagnostics = List.of(responseDto.diagnostics());
+        // TODO by https://sonarsource.atlassian.net/browse/SLVS-2470: remove log that is here only for testing purposes
+        LOG.info("sqvs-roslyn: received diagnostics {}.", diagnostics.stream().count());
+      }
+    } catch (InterruptedException e) {
+      LOG.debug("Interrupted!", e);
+      Thread.currentThread().interrupt();
+    } catch (Exception e) {
+      LOG.error("Response crashed due to: " + e.getMessage() + e.fillInStackTrace());
     }
+
+    return diagnostics;
+  }
 }

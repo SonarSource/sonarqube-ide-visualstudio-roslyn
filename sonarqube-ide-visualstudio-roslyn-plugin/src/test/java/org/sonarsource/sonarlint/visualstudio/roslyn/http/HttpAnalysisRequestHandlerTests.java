@@ -35,64 +35,62 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
-
 class HttpAnalysisRequestHandlerTests {
 
-    private HttpClientHandler httpClientHandler;
-    private HttpAnalysisRequestHandler analysisRequestHandler;
-    private final Collection<String> fileNames = List.of("File1.cs", "File2.cs");
-    private final Collection<ActiveRule> activeRules = List.of(mock(ActiveRule.class));
+  private HttpClientHandler httpClientHandler;
+  private HttpAnalysisRequestHandler analysisRequestHandler;
+  private final Collection<String> fileNames = List.of("File1.cs", "File2.cs");
+  private final Collection<ActiveRule> activeRules = List.of(mock(ActiveRule.class));
 
-    @RegisterExtension
-    private LogTesterJUnit5 logTester = new LogTesterJUnit5();
+  @RegisterExtension
+  private LogTesterJUnit5 logTester = new LogTesterJUnit5();
 
-    @BeforeEach
-    void init() {
-        httpClientHandler = mock(HttpClientHandler.class);
-        analysisRequestHandler = new HttpAnalysisRequestHandler(httpClientHandler);
-    }
+  @BeforeEach
+  void init() {
+    httpClientHandler = mock(HttpClientHandler.class);
+    analysisRequestHandler = new HttpAnalysisRequestHandler(httpClientHandler);
+  }
 
-    @Test
-    void analyze_requestSucceeds_ReturnsDiagnostics() throws IOException, InterruptedException {
-        var response = mockResponseWithOneDiagnostic(200);
-        when(httpClientHandler.sendRequest(fileNames, activeRules)).thenReturn(response);
+  @Test
+  void analyze_requestSucceeds_ReturnsDiagnostics() throws IOException, InterruptedException {
+    var response = mockResponseWithOneDiagnostic(200);
+    when(httpClientHandler.sendRequest(fileNames, activeRules)).thenReturn(response);
 
-        var result = analysisRequestHandler.analyze(fileNames, activeRules);
+    var result = analysisRequestHandler.analyze(fileNames, activeRules);
 
-        assertEquals(1, result.stream().count());
-        verify(httpClientHandler).sendRequest(fileNames, activeRules);
-    }
+    assertEquals(1, result.stream().count());
+    verify(httpClientHandler).sendRequest(fileNames, activeRules);
+  }
 
-    @Test
-    void analyze_requestFails_returnsEmptyDiagnostics() throws IOException, InterruptedException {
-        var response = mockResponseWithOneDiagnostic(404);
-        when(httpClientHandler.sendRequest(fileNames, activeRules)).thenReturn(response);
+  @Test
+  void analyze_requestFails_returnsEmptyDiagnostics() throws IOException, InterruptedException {
+    var response = mockResponseWithOneDiagnostic(404);
+    when(httpClientHandler.sendRequest(fileNames, activeRules)).thenReturn(response);
 
-        var result = analysisRequestHandler.analyze(fileNames, activeRules);
+    var result = analysisRequestHandler.analyze(fileNames, activeRules);
 
-        assertEquals(0, result.stream().count());
-        verify(httpClientHandler).sendRequest(fileNames, activeRules);
-        assertThat(logTester.logs(LoggerLevel.ERROR)).contains("Response from server is 404.");
-    }
+    assertEquals(0, result.stream().count());
+    verify(httpClientHandler).sendRequest(fileNames, activeRules);
+    assertThat(logTester.logs(LoggerLevel.ERROR)).contains("Response from server is 404.");
+  }
 
-    @Test
-    void analyze_throws_logsAndReturnsEmptyDiagnostics() throws IOException, InterruptedException {
-        var exceptionMessage = "message";
-        when(httpClientHandler.sendRequest(fileNames, activeRules)).thenThrow(new RuntimeException(exceptionMessage));
+  @Test
+  void analyze_throws_logsAndReturnsEmptyDiagnostics() throws IOException, InterruptedException {
+    var exceptionMessage = "message";
+    when(httpClientHandler.sendRequest(fileNames, activeRules)).thenThrow(new RuntimeException(exceptionMessage));
 
-        var result = analysisRequestHandler.analyze(fileNames, activeRules);
+    var result = analysisRequestHandler.analyze(fileNames, activeRules);
 
-        assertEquals(0, result.stream().count());
-        verify(httpClientHandler).sendRequest(fileNames, activeRules);
-        assertThat(logTester.logs(LoggerLevel.ERROR)).contains("Response crashed due to: messagejava.lang.RuntimeException: message");
-    }
+    assertEquals(0, result.stream().count());
+    verify(httpClientHandler).sendRequest(fileNames, activeRules);
+    assertThat(logTester.logs(LoggerLevel.ERROR)).contains("Response crashed due to: messagejava.lang.RuntimeException: message");
+  }
 
-    private HttpResponse<String> mockResponseWithOneDiagnostic(int statusCode)
-    {
-        var mockResponse = mock(HttpResponse.class);
-        when(mockResponse.statusCode()).thenReturn(statusCode);
-        when(mockResponse.body()).thenReturn("{\"Diagnostics\":[{\"Id\":\"S100\"}]}");
+  private HttpResponse<String> mockResponseWithOneDiagnostic(int statusCode) {
+    var mockResponse = mock(HttpResponse.class);
+    when(mockResponse.statusCode()).thenReturn(statusCode);
+    when(mockResponse.body()).thenReturn("{\"Diagnostics\":[{\"Id\":\"S100\"}]}");
 
-        return mockResponse;
-    }
+    return mockResponse;
+  }
 }
