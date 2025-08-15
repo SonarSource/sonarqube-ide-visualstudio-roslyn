@@ -61,7 +61,7 @@ public class HttpAnalysisRequestHandler {
       LOG.debug("Interrupted!", e);
       Thread.currentThread().interrupt();
     } catch (Exception e) {
-      LOG.error("Response crashed due to: " + e.getMessage() + e.fillInStackTrace());
+      throw new IllegalStateException("Response crashed due to: " + e.getMessage(), e.fillInStackTrace());
     }
 
     return diagnostics;

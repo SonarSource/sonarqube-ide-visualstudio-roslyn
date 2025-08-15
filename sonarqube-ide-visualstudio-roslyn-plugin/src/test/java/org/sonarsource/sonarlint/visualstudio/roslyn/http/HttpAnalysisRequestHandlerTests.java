@@ -33,6 +33,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 class HttpAnalysisRequestHandlerTests {
@@ -53,8 +54,7 @@ class HttpAnalysisRequestHandlerTests {
 
   @Test
   void analyze_requestSucceeds_ReturnsDiagnostics() throws IOException, InterruptedException {
-    var response = mockResponseWithOneDiagnostic(200);
-    when(httpClientHandler.sendRequest(fileNames, activeRules)).thenReturn(response);
+    mockResponseWithOneDiagnostic(200);
 
     var result = analysisRequestHandler.analyze(fileNames, activeRules);
 
@@ -64,8 +64,7 @@ class HttpAnalysisRequestHandlerTests {
 
   @Test
   void analyze_requestFails_returnsEmptyDiagnostics() throws IOException, InterruptedException {
-    var response = mockResponseWithOneDiagnostic(404);
-    when(httpClientHandler.sendRequest(fileNames, activeRules)).thenReturn(response);
+    mockResponseWithOneDiagnostic(404);
 
     var result = analysisRequestHandler.analyze(fileNames, activeRules);
 
@@ -79,17 +78,16 @@ class HttpAnalysisRequestHandlerTests {
     var exceptionMessage = "message";
     when(httpClientHandler.sendRequest(fileNames, activeRules)).thenThrow(new RuntimeException(exceptionMessage));
 
-    var result = analysisRequestHandler.analyze(fileNames, activeRules);
+    var thrown = assertThrows(IllegalStateException.class, () -> analysisRequestHandler.analyze(fileNames, activeRules));
 
-    assertEquals(0, result.stream().count());
-    verify(httpClientHandler).sendRequest(fileNames, activeRules);
-    assertThat(logTester.logs(LoggerLevel.ERROR)).contains("Response crashed due to: messagejava.lang.RuntimeException: message");
+    assertThat(thrown).hasMessageContaining("Response crashed due to: " + exceptionMessage);
   }
 
-  private HttpResponse<String> mockResponseWithOneDiagnostic(int statusCode) {
+  private HttpResponse<String> mockResponseWithOneDiagnostic(int statusCode) throws IOException, InterruptedException {
     var mockResponse = mock(HttpResponse.class);
     when(mockResponse.statusCode()).thenReturn(statusCode);
     when(mockResponse.body()).thenReturn("{\"Diagnostics\":[{\"Id\":\"S100\"}]}");
+    when(httpClientHandler.sendRequest(fileNames, activeRules)).thenReturn(mockResponse);
 
     return mockResponse;
   }
