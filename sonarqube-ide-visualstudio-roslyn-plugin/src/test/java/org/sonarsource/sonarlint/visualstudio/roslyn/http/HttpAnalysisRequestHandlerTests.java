@@ -32,7 +32,6 @@ import java.util.Collection;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
@@ -58,7 +57,7 @@ class HttpAnalysisRequestHandlerTests {
 
     var result = analysisRequestHandler.analyze(fileNames, activeRules);
 
-    assertEquals(1, result.stream().count());
+    assertThat(result).hasSize(1);
     verify(httpClientHandler).sendRequest(fileNames, activeRules);
   }
 
@@ -68,7 +67,7 @@ class HttpAnalysisRequestHandlerTests {
 
     var result = analysisRequestHandler.analyze(fileNames, activeRules);
 
-    assertEquals(0, result.stream().count());
+    assertThat(result).isEmpty();
     verify(httpClientHandler).sendRequest(fileNames, activeRules);
     assertThat(logTester.logs(LoggerLevel.ERROR)).contains("Response from server is 404.");
   }

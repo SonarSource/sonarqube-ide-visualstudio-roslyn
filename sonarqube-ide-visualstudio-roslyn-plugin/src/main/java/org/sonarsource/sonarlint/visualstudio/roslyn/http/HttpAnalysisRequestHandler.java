@@ -20,6 +20,9 @@
 package org.sonarsource.sonarlint.visualstudio.roslyn.http;
 
 import com.google.gson.Gson;
+import java.net.HttpURLConnection;
+import java.util.ArrayList;
+import java.util.Collection;
 import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.scanner.ScannerSide;
 import org.sonar.api.utils.log.Logger;
@@ -27,16 +30,11 @@ import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.Diagnostic;
 
-import java.net.HttpURLConnection;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
 @ScannerSide
 @SonarLintSide(lifespan = "INSTANCE")
 public class HttpAnalysisRequestHandler {
   private static final Logger LOG = Loggers.get(HttpAnalysisRequestHandler.class);
-  private HttpClientHandler httpClientFactory;
+  private final HttpClientHandler httpClientFactory;
 
   public HttpAnalysisRequestHandler(HttpClientHandler httpClientFactory) {
     this.httpClientFactory = httpClientFactory;
@@ -53,9 +51,9 @@ public class HttpAnalysisRequestHandler {
 
       var responseDto = new Gson().fromJson(response.body(), AnalysisResponseDto.class);
       if (responseDto != null) {
-        diagnostics = List.of(responseDto.diagnostics());
+        diagnostics = responseDto.diagnostics();
         // TODO by https://sonarsource.atlassian.net/browse/SLVS-2470: remove log that is here only for testing purposes
-        LOG.info("sqvs-roslyn: received diagnostics {}.", diagnostics.stream().count());
+        LOG.info("sqvs-roslyn: received diagnostics {}.", diagnostics.size());
       }
     } catch (InterruptedException e) {
       LOG.debug("Interrupted!", e);

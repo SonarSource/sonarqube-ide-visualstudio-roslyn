@@ -21,9 +21,7 @@ package org.sonarsource.sonarlint.visualstudio.roslyn;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
-
 import org.sonar.api.batch.fs.FilePredicate;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.sensor.Sensor;
@@ -64,19 +62,13 @@ public class SqvsRoslynSensor implements Sensor {
     if (!context.fileSystem().hasFiles(predicate)) {
       return;
     }
-
-    try {
-      analyze(context, predicate);
-    } catch (Exception e) {
-      throw new IllegalStateException("Analysis failed: " + e.getMessage(), e.getCause());
-    }
+    analyze(context, predicate);
   }
 
   private void analyze(SensorContext context, FilePredicate predicate) {
     var inputFiles = StreamSupport.stream(
       context.fileSystem().inputFiles(predicate).spliterator(), false)
-      .map(InputFile::absolutePath)
-      .collect(Collectors.toList());
+      .map(InputFile::absolutePath).toList();
     var activeRules = context.activeRules().findByRepository(SqvsRoslynPluginConstants.REPOSITORY_KEY);
     httpRequestHandler.analyze(inputFiles, activeRules);
     // TODO by https://sonarsource.atlassian.net/browse/SLVS-2470 send analysis results to SlCore

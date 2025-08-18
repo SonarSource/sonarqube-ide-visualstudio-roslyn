@@ -30,7 +30,7 @@ import java.net.http.HttpHeaders;
 import java.util.Collection;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 class HttpClientHandlerTests {
@@ -50,11 +50,11 @@ class HttpClientHandlerTests {
 
     var result = httpClientHandler.createRequest("");
 
-    assertEquals(String.format("http://localhost:%d/analyze", port), result.uri().toString());
-    assertEquals("POST", result.method());
+    assertThat(result.uri().toString()).hasToString(String.format("http://localhost:%d/analyze", port));
+    assertThat(result.method()).isEqualTo("POST");
     HttpHeaders headers = result.headers();
-    assertEquals("application/json", headers.firstValue("Content-Type").get());
-    assertEquals(token, headers.firstValue("X-Auth-Token").get());
+    assertThat(headers.firstValue("Content-Type").get()).hasToString("application/json");
+    assertThat(headers.firstValue("X-Auth-Token").get()).hasToString(token);
   }
 
   @Test

@@ -46,7 +46,7 @@ public class JsonRequestBuilder {
   }
 
   private static JsonArray buildFileNames(Collection<String> fileNames) {
-    JsonArray filesJson = new JsonArray();
+    var filesJson = new JsonArray();
     for (String fileName : fileNames) {
       filesJson.add(fileName);
     }
@@ -55,12 +55,12 @@ public class JsonRequestBuilder {
   }
 
   private static JsonArray buildRulesConfig(Collection<ActiveRule> activeRules) {
-    JsonArray rulesJson = new JsonArray();
+    var rulesJson = new JsonArray();
     for (ActiveRule activeRule : activeRules) {
-      JsonObject ruleJson = new JsonObject();
+      var ruleJson = new JsonObject();
       ruleJson.addProperty("ruleId", activeRule.ruleKey().rule());
       if (!activeRule.params().isEmpty()) {
-        JsonObject paramsJson = new JsonObject();
+        var paramsJson = new JsonObject();
         for (Map.Entry<String, String> param : activeRule.params().entrySet()) {
           paramsJson.addProperty(param.getKey(), param.getValue());
         }

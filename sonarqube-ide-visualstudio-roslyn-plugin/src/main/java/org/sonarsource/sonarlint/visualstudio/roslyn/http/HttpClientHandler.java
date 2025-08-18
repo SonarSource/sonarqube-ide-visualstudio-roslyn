@@ -48,7 +48,7 @@ public class HttpClientHandler {
   }
 
   public HttpResponse<String> sendRequest(Collection<String> fileNames, Collection<ActiveRule> activeRules) throws IOException, InterruptedException {
-    var client = HttpClient.newHttpClient();
+    HttpClient client = HttpClient.newHttpClient();
     var jsonPayload = jsonRequestBuilder.buildBody(fileNames, activeRules);
     var request = createRequest(jsonPayload);
     return client.send(request, HttpResponse.BodyHandlers.ofString());

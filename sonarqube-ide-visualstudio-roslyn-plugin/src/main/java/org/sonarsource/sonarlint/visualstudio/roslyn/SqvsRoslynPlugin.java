@@ -27,20 +27,19 @@ import org.sonarsource.sonarlint.visualstudio.roslyn.http.JsonRequestBuilder;
 
 public class SqvsRoslynPlugin implements Plugin {
 
-    @Override
-    public void define(Context context) {
-        if (context.getRuntime().getProduct() == SonarProduct.SONARLINT) {
-            context.addExtensions(
-                    SqvsRoslynSensor.class,
-                    JsonRequestBuilder.class,
-                    HttpClientHandler.class,
-                    HttpAnalysisRequestHandler.class
-            );
-        }
-
-        context.addExtension(CSharpLanguage.class);
-
-        context.addExtensions(new SqvsRoslynPluginPropertyDefinitions().create());
+  @Override
+  public void define(Context context) {
+    if (context.getRuntime().getProduct() == SonarProduct.SONARLINT) {
+      context.addExtensions(
+        SqvsRoslynSensor.class,
+        JsonRequestBuilder.class,
+        HttpClientHandler.class,
+        HttpAnalysisRequestHandler.class);
     }
+
+    context.addExtension(CSharpLanguage.class);
+
+    context.addExtensions(new SqvsRoslynPluginPropertyDefinitions().create());
+  }
 
 }

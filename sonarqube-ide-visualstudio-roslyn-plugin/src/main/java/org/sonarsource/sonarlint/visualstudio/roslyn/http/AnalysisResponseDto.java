@@ -20,16 +20,16 @@
 package org.sonarsource.sonarlint.visualstudio.roslyn.http;
 
 import com.google.gson.annotations.SerializedName;
-import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.Diagnostic;
-
+import java.util.List;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.Diagnostic;
 
 public class AnalysisResponseDto {
   @SerializedName("Diagnostics")
-  private Diagnostic[] diagnostics;
+  private List<Diagnostic> diagnostics;
 
   @Nullable
-  public Diagnostic[] diagnostics() {
+  public List<Diagnostic> diagnostics() {
     return diagnostics;
   }
 }

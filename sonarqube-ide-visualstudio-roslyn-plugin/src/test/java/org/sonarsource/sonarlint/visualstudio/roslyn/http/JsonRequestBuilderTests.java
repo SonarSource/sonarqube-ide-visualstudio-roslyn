@@ -30,9 +30,8 @@ import org.sonar.api.utils.log.LoggerLevel;
 
 import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.*;
 
 class JsonRequestBuilderTests {
 
@@ -53,7 +52,7 @@ class JsonRequestBuilderTests {
 
         var result = jsonParser.buildBody(fileNames, activeRules);
 
-        assertEquals(expected, result);
+        assertThat(result).isEqualTo(expected);
     }
 
     @Test
@@ -64,7 +63,7 @@ class JsonRequestBuilderTests {
 
         var result = jsonParser.buildBody(fileNames, activeRules);
 
-        assertEquals(expected, result);
+        assertThat(result).isEqualTo(expected);
     }
 
     @Test
@@ -79,7 +78,7 @@ class JsonRequestBuilderTests {
 
         var result = jsonParser.buildBody(fileNames, activeRules);
 
-        assertEquals(expected, result);
+        assertThat(result).isEqualTo(expected);
     }
 
     @Test
@@ -90,7 +89,7 @@ class JsonRequestBuilderTests {
 
         var result = jsonParser.buildBody(fileNames, activeRules);
 
-        assertEquals("", result);
+        assertThat(result).isEmpty();
         assertThat(logTester.logs(LoggerLevel.WARN)).contains("fileNames or activeRules are null");
     }
 
@@ -102,7 +101,7 @@ class JsonRequestBuilderTests {
 
         var result = jsonParser.buildBody(fileNames, activeRules);
 
-        assertEquals("", result);
+        assertThat(result).isEmpty();
         assertThat(logTester.logs(LoggerLevel.WARN)).contains("fileNames or activeRules are null");
     }
 
@@ -114,7 +113,7 @@ class JsonRequestBuilderTests {
 
         var result = jsonParser.buildBody(fileNames, activeRules);
 
-        assertEquals("", result);
+        assertThat(result).isEmpty();
         assertThat(logTester.logs(LoggerLevel.WARN)).contains("fileNames or activeRules are null");
     }
 
@@ -130,12 +129,12 @@ class JsonRequestBuilderTests {
 
         var result = jsonParser.buildBody(fileNames, activeRules);
 
-        assertEquals(expected, result);
+        assertThat(result).isEqualTo(expected);
         var fileNamesArray = JsonParser.parseString(result).getAsJsonObject().get("fileNames").getAsJsonArray();
-        assertEquals(3, fileNamesArray.size());
-        assertEquals("file with spaces.cs", fileNamesArray.get(0).getAsString());
-        assertEquals("file\"with\"quotes.cs", fileNamesArray.get(1).getAsString());
-        assertEquals("file\\with\\backslashes.cs", fileNamesArray.get(2).getAsString());
+        assertThat(fileNamesArray).hasSize(3);
+        assertThat(fileNamesArray.get(0).getAsString()).hasToString("file with spaces.cs");
+        assertThat(fileNamesArray.get(1).getAsString()).hasToString("file\"with\"quotes.cs");
+        assertThat(fileNamesArray.get(2).getAsString()).hasToString("file\\with\\backslashes.cs");
     }
 
     private ActiveRule createMockActiveRule(String ruleId, Map<String, String> params) {
