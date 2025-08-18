@@ -48,7 +48,7 @@ class JsonRequestBuilderTests {
     void buildBody_withEmptyCollections_shouldReturnValidJson() {
         Collection<String> fileNames = Collections.emptyList();
         Collection<ActiveRule> activeRules = Collections.emptyList();
-        var expected = "{\"fileNames\":[],\"activeRules\":[]}";
+        var expected = "{\"FileNames\":[],\"ActiveRules\":[]}";
 
         var result = jsonParser.buildBody(fileNames, activeRules);
 
@@ -59,7 +59,7 @@ class JsonRequestBuilderTests {
     void buildBody_withFileNamesAndActiveRules_shouldReturnValidJson() {
         Collection<String> fileNames = List.of("File1.cs", "File2.cs");
         Collection<ActiveRule> activeRules = List.of(createMockActiveRule("S100",  new HashMap<>()), createMockActiveRule("S101",  new HashMap<>()));
-        var expected = "{\"fileNames\":[\"File1.cs\",\"File2.cs\"],\"activeRules\":[{\"ruleId\":\"S100\"},{\"ruleId\":\"S101\"}]}";
+        var expected = "{\"FileNames\":[\"File1.cs\",\"File2.cs\"],\"ActiveRules\":[{\"RuleId\":\"S100\",\"Params\":{}},{\"RuleId\":\"S101\",\"Params\":{}}]}";
 
         var result = jsonParser.buildBody(fileNames, activeRules);
 
@@ -74,7 +74,7 @@ class JsonRequestBuilderTests {
         params.put("isRegularExpression", "true");
         ActiveRule ruleWithParams = createMockActiveRule("S1003", params);
         Collection<ActiveRule> activeRules = Collections.singletonList(ruleWithParams);
-        var expected = "{\"fileNames\":[],\"activeRules\":[{\"ruleId\":\"S1003\",\"params\":{\"maximum\":\"10\",\"isRegularExpression\":\"true\"}}]}";
+        var expected = "{\"FileNames\":[],\"ActiveRules\":[{\"RuleId\":\"S1003\",\"Params\":{\"maximum\":\"10\",\"isRegularExpression\":\"true\"}}]}";
 
         var result = jsonParser.buildBody(fileNames, activeRules);
 
@@ -125,12 +125,12 @@ class JsonRequestBuilderTests {
             "file\\with\\backslashes.cs"
         );
         Collection<ActiveRule> activeRules = Collections.emptyList();
-        var expected = "{\"fileNames\":[\"file with spaces.cs\",\"file\\\"with\\\"quotes.cs\",\"file\\\\with\\\\backslashes.cs\"],\"activeRules\":[]}";
+        var expected = "{\"FileNames\":[\"file with spaces.cs\",\"file\\\"with\\\"quotes.cs\",\"file\\\\with\\\\backslashes.cs\"],\"ActiveRules\":[]}";
 
         var result = jsonParser.buildBody(fileNames, activeRules);
 
         assertThat(result).isEqualTo(expected);
-        var fileNamesArray = JsonParser.parseString(result).getAsJsonObject().get("fileNames").getAsJsonArray();
+        var fileNamesArray = JsonParser.parseString(result).getAsJsonObject().get("FileNames").getAsJsonArray();
         assertThat(fileNamesArray).hasSize(3);
         assertThat(fileNamesArray.get(0).getAsString()).hasToString("file with spaces.cs");
         assertThat(fileNamesArray.get(1).getAsString()).hasToString("file\"with\"quotes.cs");

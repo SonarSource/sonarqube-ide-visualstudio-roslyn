@@ -19,30 +19,26 @@
  */
 package org.sonarsource.sonarlint.visualstudio.roslyn.http;
 
-import com.google.gson.Gson;
-import java.util.Collection;
-import org.sonar.api.batch.rule.ActiveRule;
-import org.sonar.api.scanner.ScannerSide;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
-import org.sonarsource.api.sonarlint.SonarLintSide;
+import com.google.gson.annotations.SerializedName;
+import java.util.Map;
 
-@ScannerSide
-@SonarLintSide(lifespan = "INSTANCE")
-public class JsonRequestBuilder {
-  private static final Logger LOG = Loggers.get(JsonRequestBuilder.class);
+public class ActiveRuleDto {
+  @SerializedName("RuleId")
+  private final String ruleId;
 
-  public String buildBody(Collection<String> fileNames, Collection<ActiveRule> activeRules) {
-    if (fileNames == null || activeRules == null) {
-      LOG.warn("fileNames or activeRules are null");
-      return "";
-    }
-    var activeRuleDtos = activeRules.stream()
-      .map(rule -> new ActiveRuleDto(
-        rule.ruleKey().rule(),
-        rule.params())).toList();
-    var analysisRequest = new AnalysisRequestDto(fileNames, activeRuleDtos);
+  @SerializedName("Params")
+  private final Map<String, String> params;
 
-    return new Gson().toJson(analysisRequest);
+  public ActiveRuleDto(String ruleId, Map<String, String> params) {
+    this.ruleId = ruleId;
+    this.params = params;
+  }
+
+  public String getRuleId() {
+    return ruleId;
+  }
+
+  public Map<String, String> getParams() {
+    return params;
   }
 }
