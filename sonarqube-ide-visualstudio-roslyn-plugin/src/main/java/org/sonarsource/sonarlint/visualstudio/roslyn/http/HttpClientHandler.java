@@ -32,7 +32,7 @@ import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.visualstudio.roslyn.SqvsRoslynPluginPropertyDefinitions;
 
 @ScannerSide
-@SonarLintSide(lifespan = "SINGLE_ANALYSIS")
+@SonarLintSide
 public class HttpClientHandler {
   private final SensorContext context;
   private final JsonRequestBuilder jsonRequestBuilder;

@@ -31,7 +31,7 @@ import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.Diagnostic;
 
 @ScannerSide
-@SonarLintSide(lifespan = "SINGLE_ANALYSIS")
+@SonarLintSide
 public class HttpAnalysisRequestHandler {
   private static final Logger LOG = Loggers.get(HttpAnalysisRequestHandler.class);
   private final HttpClientHandler httpClientFactory;
