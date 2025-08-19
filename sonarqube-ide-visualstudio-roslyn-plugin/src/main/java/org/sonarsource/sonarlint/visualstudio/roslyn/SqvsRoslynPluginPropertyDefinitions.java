@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.visualstudio.roslyn;
 import java.util.ArrayList;
 import java.util.List;
 import org.sonar.api.config.PropertyDefinition;
-import org.sonar.api.resources.Qualifiers;
 
 import static org.sonarsource.sonarlint.visualstudio.roslyn.SqvsRoslynPluginConstants.LANGUAGE_KEY;
 
@@ -58,7 +57,6 @@ public class SqvsRoslynPluginPropertyDefinitions {
         .description("Comma-separated list of suffixes of files to analyze.")
         .multiValues(true)
         .onConfigScopes(PropertyDefinition.ConfigScope.PROJECT)
-        .onQualifiers(Qualifiers.PROJECT)
         .build());
     result.add(
       PropertyDefinition.builder(getAnalyzerPath())
