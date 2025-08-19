@@ -40,6 +40,14 @@ public class SqvsRoslynPluginPropertyDefinitions {
     return PROP_PREFIX + LANGUAGE_KEY + ".internal.analyzerPath";
   }
 
+  public static String getServerPort() {
+    return PROP_PREFIX + LANGUAGE_KEY + ".internal.roslynAnalyzerServerPort";
+  }
+
+  public static String getServerToken() {
+    return PROP_PREFIX + LANGUAGE_KEY + ".internal.roslynAnalyzerServerToken";
+  }
+
   public List<PropertyDefinition> create() {
     List<PropertyDefinition> result = new ArrayList<>();
     result.add(
@@ -56,6 +64,15 @@ public class SqvsRoslynPluginPropertyDefinitions {
       PropertyDefinition.builder(getAnalyzerPath())
         .hidden()
         .build());
+    result.add(
+      PropertyDefinition.builder(getServerPort())
+        .hidden()
+        .build());
+    result.add(
+      PropertyDefinition.builder(getServerToken())
+        .hidden()
+        .build());
     return result;
   }
+
 }
