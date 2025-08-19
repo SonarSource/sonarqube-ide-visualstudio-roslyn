@@ -17,29 +17,29 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.visualstudio.roslyn;
+package org.sonarsource.sonarlint.visualstudio.roslyn.http;
 
+import com.google.gson.annotations.SerializedName;
+import java.util.Collection;
 import java.util.List;
-import org.junit.jupiter.api.Test;
-import org.sonar.api.Plugin;
-import org.sonar.api.SonarRuntime;
-import org.sonar.api.internal.SonarRuntimeImpl;
-import org.sonar.api.utils.Version;
 
-import static org.assertj.core.api.Assertions.assertThat;
+public class AnalysisRequestDto {
+  @SerializedName("FileNames")
+  private final Collection<String> fileNames;
 
-class SqvsRoslynPluginTests {
+  @SerializedName("ActiveRules")
+  private final Collection<ActiveRuleDto> activeRules;
 
-  @Test
-  void getExtensions() {
-    SonarRuntime sonarRuntime = SonarRuntimeImpl.forSonarLint(Version.create(7, 9));
-
-    Plugin.Context context = new Plugin.Context(sonarRuntime);
-    new SqvsRoslynPlugin().define(context);
-
-    List<?> extensions = context.getExtensions();
-
-    assertThat(extensions).hasSize(7);
+  public AnalysisRequestDto(Collection<String> fileNames, List<ActiveRuleDto> activeRules) {
+    this.fileNames = fileNames;
+    this.activeRules = activeRules;
   }
 
+  public Collection<String> getFileNames() {
+    return fileNames;
+  }
+
+  public Collection<ActiveRuleDto> getActiveRules() {
+    return activeRules;
+  }
 }

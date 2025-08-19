@@ -19,16 +19,11 @@
  */
 package org.sonarsource.sonarlint.visualstudio.roslyn;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Map;
-
+import java.util.stream.StreamSupport;
 import org.sonar.api.batch.fs.FilePredicate;
 import org.sonar.api.batch.fs.InputFile;
-import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.SensorDescriptor;
@@ -37,6 +32,7 @@ import org.sonar.api.batch.sensor.issue.NewIssueLocation;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
+import org.sonarsource.sonarlint.visualstudio.roslyn.http.HttpAnalysisRequestHandler;
 import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.Diagnostic;
 import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.DiagnosticLocation;
 import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.Fix;
@@ -46,109 +42,11 @@ import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.QuickFixEdit;
 public class SqvsRoslynSensor implements Sensor {
 
   private static final Logger LOG = Loggers.get(SqvsRoslynSensor.class);
+  private final HttpAnalysisRequestHandler httpRequestHandler;
 
-  public SqvsRoslynSensor() {
+  public SqvsRoslynSensor(HttpAnalysisRequestHandler httpRequestHandler) {
+    this.httpRequestHandler = httpRequestHandler;
   }
-
-  @Override
-  public void describe(SensorDescriptor descriptor) {
-    descriptor
-      .name("SQVS-Roslyn")
-      .onlyOnLanguage(SqvsRoslynPluginConstants.LANGUAGE_KEY)
-      .createIssuesForRuleRepositories(SqvsRoslynPluginConstants.REPOSITORY_KEY)
-      .onlyWhenConfiguration(c -> c.hasKey(SqvsRoslynPluginPropertyDefinitions.getAnalyzerPath()));
-  }
-
-  @Override
-  public void execute(SensorContext context) {
-    FilePredicate predicate = context.fileSystem().predicates().hasLanguage(SqvsRoslynPluginConstants.LANGUAGE_KEY);
-    if (!context.fileSystem().hasFiles(predicate)) {
-      return;
-//    }
-//    try {
-//      Path analyzerPluginPath = context.config().get(CSharpPropertyDefinitions.getAnalyzerPath()).map(Paths::get).orElse(null);
-//      server.lazyStart(context.fileSystem().baseDir().toPath(), analyzerPluginPath, useFramework, loadProjectsOnDemand, dotnetCliExePath, monoExePath, msBuildPath, solutionPath,
-//        startupTimeOutSec, loadProjectsTimeOutSec);
-//    } catch (InterruptedException e) {
-//      LOG.warn("Interrupted", e);
-//      Thread.currentThread().interrupt();
-//      return;
-//    } catch (Exception e) {
-//      throw new IllegalStateException("Unable to start OmniSharp", e);
-//    }
-//
-//    try {
-//      server.whenReady().get();
-//      analyze(context, predicate);
-//    } catch (InterruptedException e) {
-//      Thread.currentThread().interrupt();
-//    } catch (ExecutionException e) {
-//      if (e.getCause() instanceof TimeoutException) {
-//        LOG.error("Timeout waiting for the solution to be loaded." +
-//          " You can find help on https://docs.sonarsource.com/sonarlint/intellij/using-sonarlint/scan-my-project/#supported-features-in-rider" +
-//          " or https://docs.sonarsource.com/sonarlint/vs-code/getting-started/requirements/#csharp-analysis");
-//        return;
-//      }
-//      throw new IllegalStateException("Analysis failed: " + e.getMessage(), e.getCause());
-    }
-  }
-
-  private void analyze(SensorContext context, FilePredicate predicate) {
-//    JsonObject config = buildRulesConfig(context);
-//    omnisharpEndpoints.config(config);
-//
-//    ProgressReport progressReport = new ProgressReport("Report about progress of OmniSharp analyzer", TimeUnit.SECONDS.toMillis(10));
-//    progressReport.start(StreamSupport.stream(context.fileSystem().inputFiles(predicate).spliterator(), false).map(InputFile::toString).collect(Collectors.toList()));
-//    boolean successfullyCompleted = false;
-//    boolean cancelled = false;
-//    try {
-//      for (InputFile inputFile : context.fileSystem().inputFiles(predicate)) {
-//        if (context.isCancelled()) {
-//          cancelled = true;
-//          break;
-//        }
-//        scanFile(context, inputFile);
-//        progressReport.nextFile();
-//      }
-//      successfullyCompleted = !cancelled;
-//    } finally {
-//      if (successfullyCompleted) {
-//        progressReport.stop();
-//      } else {
-//        progressReport.cancel();
-//      }
-//    }
-  }
-
-  private static JsonObject buildRulesConfig(SensorContext context) {
-    JsonObject config = new JsonObject();
-    JsonArray rulesJson = new JsonArray();
-    for (ActiveRule activeRule : context.activeRules().findByRepository(SqvsRoslynPluginConstants.REPOSITORY_KEY)) {
-      JsonObject ruleJson = new JsonObject();
-      ruleJson.addProperty("ruleId", activeRule.ruleKey().rule());
-      if (!activeRule.params().isEmpty()) {
-        JsonObject paramsJson = new JsonObject();
-        for (Map.Entry<String, String> param : activeRule.params().entrySet()) {
-          paramsJson.addProperty(param.getKey(), param.getValue());
-        }
-        ruleJson.add("params", paramsJson);
-      }
-      rulesJson.add(ruleJson);
-    }
-    config.add("activeRules", rulesJson);
-    return config;
-  }
-
-//  private void scanFile(SensorContext context, InputFile f) {
-//    String buffer;
-//    try {
-//      buffer = f.contents();
-//    } catch (IOException e) {
-//      throw new IllegalStateException("Unable to read file buffer", e);
-//    }
-//    omnisharpEndpoints.updateBuffer(f.file(), buffer);
-//    omnisharpEndpoints.codeCheck(f.file(), diag -> handle(context, diag));
-//  }
 
   private static void handle(SensorContext context, Diagnostic diag) {
     var ruleKey = RuleKey.of(SqvsRoslynPluginConstants.REPOSITORY_KEY, diag.getId());
@@ -219,6 +117,33 @@ public class SqvsRoslynSensor implements Sensor {
       .on(inputFile)
       .at(inputFile.newRange(location.getLine(), location.getColumn() - 1, location.getEndLine(), location.getEndColumn() - 1))
       .message(location.getText());
+  }
+
+  @Override
+  public void describe(SensorDescriptor descriptor) {
+    descriptor
+      .name("SQVS-Roslyn")
+      .onlyOnLanguage(SqvsRoslynPluginConstants.LANGUAGE_KEY)
+      .createIssuesForRuleRepositories(SqvsRoslynPluginConstants.REPOSITORY_KEY);
+  }
+
+  @Override
+  public void execute(SensorContext context) {
+    FilePredicate predicate = context.fileSystem().predicates().hasLanguage(SqvsRoslynPluginConstants.LANGUAGE_KEY);
+    if (!context.fileSystem().hasFiles(predicate)) {
+      return;
+    }
+    analyze(context, predicate);
+  }
+
+  private void analyze(SensorContext context, FilePredicate predicate) {
+    var inputFiles = StreamSupport.stream(
+      context.fileSystem().inputFiles(predicate).spliterator(), false)
+      .map(InputFile::absolutePath).toList();
+    var activeRules = context.activeRules().findByRepository(SqvsRoslynPluginConstants.REPOSITORY_KEY);
+    httpRequestHandler.analyze(inputFiles, activeRules);
+    // TODO by https://sonarsource.atlassian.net/browse/SLVS-2470 send analysis results to SlCore
+    // handle(context, diagnostic);
   }
 
 }

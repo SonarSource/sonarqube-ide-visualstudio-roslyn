@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.visualstudio.roslyn;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.sonar.api.config.PropertyDefinition;
 import org.sonar.api.resources.Qualifiers;
 
@@ -29,10 +28,17 @@ import static org.sonarsource.sonarlint.visualstudio.roslyn.SqvsRoslynPluginCons
 
 public class SqvsRoslynPluginPropertyDefinitions {
 
-  private static final String PROP_PREFIX = "sonar.";
-
-  static final String FILE_SUFFIXES_KEY = PROP_PREFIX + SqvsRoslynPluginConstants.LANGUAGE_KEY + ".file.suffixes";
   static final String FILE_SUFFIXES_DEFVALUE = ".cs";
+  private static final String PROP_PREFIX = "sonar.";
+  static final String FILE_SUFFIXES_KEY = PROP_PREFIX + SqvsRoslynPluginConstants.LANGUAGE_KEY + ".file.suffixes";
+
+  public static String getFileSuffixProperty() {
+    return PROP_PREFIX + LANGUAGE_KEY + ".file.suffixes";
+  }
+
+  public static String getAnalyzerPath() {
+    return PROP_PREFIX + LANGUAGE_KEY + ".internal.analyzerPath";
+  }
 
   public List<PropertyDefinition> create() {
     List<PropertyDefinition> result = new ArrayList<>();
@@ -43,22 +49,13 @@ public class SqvsRoslynPluginPropertyDefinitions {
         .name("File suffixes")
         .description("Comma-separated list of suffixes of files to analyze.")
         .multiValues(true)
-              .onConfigScopes(PropertyDefinition.ConfigScope.PROJECT)
+        .onConfigScopes(PropertyDefinition.ConfigScope.PROJECT)
         .onQualifiers(Qualifiers.PROJECT)
         .build());
     result.add(
       PropertyDefinition.builder(getAnalyzerPath())
         .hidden()
-        .build()
-    );
+        .build());
     return result;
-  }
-
-  public static String getFileSuffixProperty() {
-    return PROP_PREFIX + LANGUAGE_KEY + ".file.suffixes";
-  }
-
-  public static String getAnalyzerPath() {
-    return PROP_PREFIX + LANGUAGE_KEY + ".internal.analyzerPath";
   }
 }
