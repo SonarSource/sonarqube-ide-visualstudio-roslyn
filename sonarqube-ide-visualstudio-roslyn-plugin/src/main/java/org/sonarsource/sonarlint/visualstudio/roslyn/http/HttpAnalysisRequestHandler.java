@@ -31,7 +31,7 @@ import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.Diagnostic;
 
 @ScannerSide
-@SonarLintSide(lifespan = "INSTANCE")
+@SonarLintSide(lifespan = "SINGLE_ANALYSIS")
 public class HttpAnalysisRequestHandler {
   private static final Logger LOG = Loggers.get(HttpAnalysisRequestHandler.class);
   private final HttpClientHandler httpClientFactory;
@@ -52,7 +52,7 @@ public class HttpAnalysisRequestHandler {
       var responseDto = new Gson().fromJson(response.body(), AnalysisResponseDto.class);
       if (responseDto != null) {
         diagnostics = responseDto.diagnostics();
-        // TODO by https://sonarsource.atlassian.net/browse/SLVS-2470: remove log that is here only for testing purposes
+        // TODO by https://sonarsource.atlassian.net/browse/SLVS-2426: remove log that is here only for testing purposes
         LOG.info("sqvs-roslyn: received diagnostics {}.", diagnostics.size());
       }
     } catch (InterruptedException e) {

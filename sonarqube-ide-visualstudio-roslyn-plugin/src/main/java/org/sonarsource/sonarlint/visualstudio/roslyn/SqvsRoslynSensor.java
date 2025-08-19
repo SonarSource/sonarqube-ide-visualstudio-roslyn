@@ -142,7 +142,7 @@ public class SqvsRoslynSensor implements Sensor {
       .map(InputFile::absolutePath).toList();
     var activeRules = context.activeRules().findByRepository(SqvsRoslynPluginConstants.REPOSITORY_KEY);
     httpRequestHandler.analyze(inputFiles, activeRules);
-    // TODO by https://sonarsource.atlassian.net/browse/SLVS-2470 send analysis results to SlCore
+    // TODO by https://sonarsource.atlassian.net/browse/SLVS-2426 send analysis results to SlCore
     // handle(context, diagnostic);
   }
 
