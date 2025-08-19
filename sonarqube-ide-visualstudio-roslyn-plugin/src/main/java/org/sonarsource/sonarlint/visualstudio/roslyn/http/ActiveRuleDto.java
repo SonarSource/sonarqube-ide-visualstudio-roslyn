@@ -17,29 +17,28 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.visualstudio.roslyn;
+package org.sonarsource.sonarlint.visualstudio.roslyn.http;
 
-import java.util.List;
-import org.junit.jupiter.api.Test;
-import org.sonar.api.Plugin;
-import org.sonar.api.SonarRuntime;
-import org.sonar.api.internal.SonarRuntimeImpl;
-import org.sonar.api.utils.Version;
+import com.google.gson.annotations.SerializedName;
+import java.util.Map;
 
-import static org.assertj.core.api.Assertions.assertThat;
+public class ActiveRuleDto {
+  @SerializedName("RuleKey")
+  private final String ruleKey;
 
-class SqvsRoslynPluginTests {
+  @SerializedName("Params")
+  private final Map<String, String> params;
 
-  @Test
-  void getExtensions() {
-    SonarRuntime sonarRuntime = SonarRuntimeImpl.forSonarLint(Version.create(7, 9));
-
-    Plugin.Context context = new Plugin.Context(sonarRuntime);
-    new SqvsRoslynPlugin().define(context);
-
-    List<?> extensions = context.getExtensions();
-
-    assertThat(extensions).hasSize(7);
+  public ActiveRuleDto(String ruleKey, Map<String, String> params) {
+    this.ruleKey = ruleKey;
+    this.params = params;
   }
 
+  public String getRuleKey() {
+    return ruleKey;
+  }
+
+  public Map<String, String> getParams() {
+    return params;
+  }
 }

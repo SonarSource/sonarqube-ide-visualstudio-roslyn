@@ -17,29 +17,29 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.visualstudio.roslyn;
+package org.sonarsource.sonarlint.visualstudio.roslyn.http;
 
-import java.util.List;
-import org.junit.jupiter.api.Test;
-import org.sonar.api.Plugin;
-import org.sonar.api.SonarRuntime;
-import org.sonar.api.internal.SonarRuntimeImpl;
-import org.sonar.api.utils.Version;
+import com.google.gson.Gson;
+import java.util.Collection;
+import org.sonar.api.batch.rule.ActiveRule;
+import org.sonar.api.scanner.ScannerSide;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
+import org.sonarsource.api.sonarlint.SonarLintSide;
 
-import static org.assertj.core.api.Assertions.assertThat;
+@ScannerSide
+@SonarLintSide(lifespan = "INSTANCE")
+public class JsonRequestBuilder {
+  private static final Logger LOG = Loggers.get(JsonRequestBuilder.class);
 
-class SqvsRoslynPluginTests {
+  public String buildBody(Collection<String> fileNames, Collection<ActiveRule> activeRules) {
+    var activeRuleDtos = activeRules.stream()
+      .map(rule -> new ActiveRuleDto(
+        rule.ruleKey().rule(),
+        rule.params()))
+      .toList();
+    var analysisRequest = new AnalysisRequestDto(fileNames, activeRuleDtos);
 
-  @Test
-  void getExtensions() {
-    SonarRuntime sonarRuntime = SonarRuntimeImpl.forSonarLint(Version.create(7, 9));
-
-    Plugin.Context context = new Plugin.Context(sonarRuntime);
-    new SqvsRoslynPlugin().define(context);
-
-    List<?> extensions = context.getExtensions();
-
-    assertThat(extensions).hasSize(7);
+    return new Gson().toJson(analysisRequest);
   }
-
 }

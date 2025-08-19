@@ -45,6 +45,7 @@
     <sonarlint-core.version>10.24.0.81415</sonarlint-core.version>
     <jdk.min.version>11</jdk.min.version>
     <license.name>GNU LGPL v3</license.name>
+    <maven.compiler.release>17</maven.compiler.release>
   </properties>
 
   <dependencyManagement>
