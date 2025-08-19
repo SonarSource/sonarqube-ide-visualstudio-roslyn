@@ -26,24 +26,20 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Collection;
 import org.sonar.api.batch.rule.ActiveRule;
-import org.sonar.api.config.Configuration;
+import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.scanner.ScannerSide;
 import org.sonarsource.api.sonarlint.SonarLintSide;
+import org.sonarsource.sonarlint.visualstudio.roslyn.SqvsRoslynPluginPropertyDefinitions;
 
 @ScannerSide
-@SonarLintSide(lifespan = "INSTANCE")
+@SonarLintSide
 public class HttpClientHandler {
-  private final Configuration configuration;
+  private final SensorContext context;
   private final JsonRequestBuilder jsonRequestBuilder;
-  private final int port;
-  private final String token;
 
-  public HttpClientHandler(Configuration configuration, JsonRequestBuilder jsonRequestBuilder) {
-    this.configuration = configuration;
+  public HttpClientHandler(SensorContext context, JsonRequestBuilder jsonRequestBuilder) {
+    this.context = context;
     this.jsonRequestBuilder = jsonRequestBuilder;
-    // TODO by https://sonarsource.atlassian.net/browse/SLVS-2470: set port and token with values from configuration
-    this.port = 60000;
-    this.token = "myToken";
   }
 
   public HttpResponse<String> sendRequest(Collection<String> fileNames, Collection<ActiveRule> activeRules) throws IOException, InterruptedException {
@@ -54,7 +50,10 @@ public class HttpClientHandler {
   }
 
   public HttpRequest createRequest(String jsonPayload) {
-    var uri = String.format("http://localhost:%d/analyze", port);
+    var settings = context.settings();
+    var port = settings.getString(SqvsRoslynPluginPropertyDefinitions.getServerPort());
+    var token = settings.getString(SqvsRoslynPluginPropertyDefinitions.getServerToken());
+    var uri = String.format("http://localhost:%s/analyze", port);
     return HttpRequest.newBuilder()
       .uri(URI.create(uri))
       .header("Content-Type", "application/json")

@@ -19,27 +19,18 @@
  */
 package org.sonarsource.sonarlint.visualstudio.roslyn;
 
-import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.sonar.api.Plugin;
-import org.sonar.api.SonarRuntime;
-import org.sonar.api.internal.SonarRuntimeImpl;
-import org.sonar.api.utils.Version;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class SqvsRoslynPluginTests {
+class SqvsRoslynPluginPropertyDefinitionsTests {
 
   @Test
-  void getExtensions() {
-    SonarRuntime sonarRuntime = SonarRuntimeImpl.forSonarLint(Version.create(7, 9));
-
-    Plugin.Context context = new Plugin.Context(sonarRuntime);
-    new SqvsRoslynPlugin().define(context);
-
-    List<?> extensions = context.getExtensions();
-
-    assertThat(extensions).hasSize(9);
+  void shouldHaveExpectedPropertyDefinitions() {
+    assertThat(SqvsRoslynPluginPropertyDefinitions.getFileSuffixProperty()).isEqualTo("sonar.cs.file.suffixes");
+    assertThat(SqvsRoslynPluginPropertyDefinitions.getAnalyzerPath()).isEqualTo("sonar.cs.internal.analyzerPath");
+    assertThat(SqvsRoslynPluginPropertyDefinitions.getServerPort()).isEqualTo("sonar.cs.internal.roslynAnalyzerServerPort");
+    assertThat(SqvsRoslynPluginPropertyDefinitions.getServerToken()).isEqualTo("sonar.cs.internal.roslynAnalyzerServerToken");
   }
 
 }
