@@ -19,17 +19,16 @@
  */
 package org.sonarsource.sonarlint.visualstudio.roslyn.http;
 
-import org.sonar.api.batch.rule.ActiveRule;
-import org.sonar.api.config.Configuration;
-import org.sonar.api.scanner.ScannerSide;
-import org.sonarsource.api.sonarlint.SonarLintSide;
-
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Collection;
+import org.sonar.api.batch.rule.ActiveRule;
+import org.sonar.api.config.Configuration;
+import org.sonar.api.scanner.ScannerSide;
+import org.sonarsource.api.sonarlint.SonarLintSide;
 
 @ScannerSide
 @SonarLintSide(lifespan = "INSTANCE")

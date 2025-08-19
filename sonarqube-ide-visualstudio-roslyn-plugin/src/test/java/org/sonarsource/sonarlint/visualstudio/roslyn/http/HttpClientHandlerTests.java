@@ -19,25 +19,26 @@
  */
 package org.sonarsource.sonarlint.visualstudio.roslyn.http;
 
+import java.io.IOException;
+import java.net.http.HttpHeaders;
+import java.util.Collection;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.config.Configuration;
 import org.sonar.api.rule.RuleKey;
 
-import java.io.IOException;
-import java.net.http.HttpHeaders;
-import java.util.Collection;
-import java.util.List;
-
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class HttpClientHandlerTests {
-  private Configuration configuration;
   // TODO by https://sonarsource.atlassian.net/browse/SLVS-2470: mock port and token with values from configuration
   private final int port = 60000;
   private final String token = "myToken";
+  private Configuration configuration;
 
   @BeforeEach
   void init() {

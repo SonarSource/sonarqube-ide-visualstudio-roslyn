@@ -19,6 +19,10 @@
  */
 package org.sonarsource.sonarlint.visualstudio.roslyn.http;
 
+import java.io.IOException;
+import java.net.http.HttpResponse;
+import java.util.Collection;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -26,22 +30,18 @@ import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.testfixtures.log.LogTesterJUnit5;
 import org.sonar.api.utils.log.LoggerLevel;
 
-import java.net.http.HttpResponse;
-import java.io.IOException;
-import java.util.Collection;
-import java.util.List;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class HttpAnalysisRequestHandlerTests {
 
-  private HttpClientHandler httpClientHandler;
-  private HttpAnalysisRequestHandler analysisRequestHandler;
   private final Collection<String> fileNames = List.of("File1.cs", "File2.cs");
   private final Collection<ActiveRule> activeRules = List.of(mock(ActiveRule.class));
-
+  private HttpClientHandler httpClientHandler;
+  private HttpAnalysisRequestHandler analysisRequestHandler;
   @RegisterExtension
   private LogTesterJUnit5 logTester = new LogTesterJUnit5();
 

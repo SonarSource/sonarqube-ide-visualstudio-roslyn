@@ -33,14 +33,11 @@ public class JsonRequestBuilder {
   private static final Logger LOG = Loggers.get(JsonRequestBuilder.class);
 
   public String buildBody(Collection<String> fileNames, Collection<ActiveRule> activeRules) {
-    if (fileNames == null || activeRules == null) {
-      LOG.warn("fileNames or activeRules are null");
-      return "";
-    }
     var activeRuleDtos = activeRules.stream()
       .map(rule -> new ActiveRuleDto(
         rule.ruleKey().rule(),
-        rule.params())).toList();
+        rule.params()))
+      .toList();
     var analysisRequest = new AnalysisRequestDto(fileNames, activeRuleDtos);
 
     return new Gson().toJson(analysisRequest);

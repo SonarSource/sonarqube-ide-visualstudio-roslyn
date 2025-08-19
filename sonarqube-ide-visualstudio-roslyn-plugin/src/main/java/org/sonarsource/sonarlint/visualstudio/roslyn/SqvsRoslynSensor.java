@@ -48,33 +48,6 @@ public class SqvsRoslynSensor implements Sensor {
     this.httpRequestHandler = httpRequestHandler;
   }
 
-  @Override
-  public void describe(SensorDescriptor descriptor) {
-    descriptor
-      .name("SQVS-Roslyn")
-      .onlyOnLanguage(SqvsRoslynPluginConstants.LANGUAGE_KEY)
-      .createIssuesForRuleRepositories(SqvsRoslynPluginConstants.REPOSITORY_KEY);
-  }
-
-  @Override
-  public void execute(SensorContext context) {
-    FilePredicate predicate = context.fileSystem().predicates().hasLanguage(SqvsRoslynPluginConstants.LANGUAGE_KEY);
-    if (!context.fileSystem().hasFiles(predicate)) {
-      return;
-    }
-    analyze(context, predicate);
-  }
-
-  private void analyze(SensorContext context, FilePredicate predicate) {
-    var inputFiles = StreamSupport.stream(
-      context.fileSystem().inputFiles(predicate).spliterator(), false)
-      .map(InputFile::absolutePath).toList();
-    var activeRules = context.activeRules().findByRepository(SqvsRoslynPluginConstants.REPOSITORY_KEY);
-    httpRequestHandler.analyze(inputFiles, activeRules);
-    // TODO by https://sonarsource.atlassian.net/browse/SLVS-2470 send analysis results to SlCore
-    // handle(context, diagnostic);
-  }
-
   private static void handle(SensorContext context, Diagnostic diag) {
     var ruleKey = RuleKey.of(SqvsRoslynPluginConstants.REPOSITORY_KEY, diag.getId());
     if (context.activeRules().find(ruleKey) != null) {
@@ -144,6 +117,33 @@ public class SqvsRoslynSensor implements Sensor {
       .on(inputFile)
       .at(inputFile.newRange(location.getLine(), location.getColumn() - 1, location.getEndLine(), location.getEndColumn() - 1))
       .message(location.getText());
+  }
+
+  @Override
+  public void describe(SensorDescriptor descriptor) {
+    descriptor
+      .name("SQVS-Roslyn")
+      .onlyOnLanguage(SqvsRoslynPluginConstants.LANGUAGE_KEY)
+      .createIssuesForRuleRepositories(SqvsRoslynPluginConstants.REPOSITORY_KEY);
+  }
+
+  @Override
+  public void execute(SensorContext context) {
+    FilePredicate predicate = context.fileSystem().predicates().hasLanguage(SqvsRoslynPluginConstants.LANGUAGE_KEY);
+    if (!context.fileSystem().hasFiles(predicate)) {
+      return;
+    }
+    analyze(context, predicate);
+  }
+
+  private void analyze(SensorContext context, FilePredicate predicate) {
+    var inputFiles = StreamSupport.stream(
+      context.fileSystem().inputFiles(predicate).spliterator(), false)
+      .map(InputFile::absolutePath).toList();
+    var activeRules = context.activeRules().findByRepository(SqvsRoslynPluginConstants.REPOSITORY_KEY);
+    httpRequestHandler.analyze(inputFiles, activeRules);
+    // TODO by https://sonarsource.atlassian.net/browse/SLVS-2470 send analysis results to SlCore
+    // handle(context, diagnostic);
   }
 
 }

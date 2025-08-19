@@ -201,8 +201,8 @@ class SqvsRoslynSensorTests {
     }
 
     private static class MockSonarLintQuickFix implements NewQuickFix {
-      private String message;
       private final List<MockSonarLintInputFileEdit> inputFileEdits = new ArrayList<>();
+      private String message;
 
       @Override
       public NewQuickFix message(String message) {
@@ -230,8 +230,8 @@ class SqvsRoslynSensorTests {
       }
 
       private static class MockSonarLintInputFileEdit implements NewInputFileEdit {
-        private InputFile inputFile;
         private final List<MockSonarLintTextEdit> textEdits = new ArrayList<>();
+        private InputFile inputFile;
 
         @Override
         public NewInputFileEdit on(InputFile inputFile) {

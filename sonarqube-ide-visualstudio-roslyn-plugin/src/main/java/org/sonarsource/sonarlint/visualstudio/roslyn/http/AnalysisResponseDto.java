@@ -21,14 +21,12 @@ package org.sonarsource.sonarlint.visualstudio.roslyn.http;
 
 import com.google.gson.annotations.SerializedName;
 import java.util.List;
-import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.Diagnostic;
 
 public class AnalysisResponseDto {
   @SerializedName("Diagnostics")
   private List<Diagnostic> diagnostics;
 
-  @Nullable
   public List<Diagnostic> diagnostics() {
     return diagnostics;
   }

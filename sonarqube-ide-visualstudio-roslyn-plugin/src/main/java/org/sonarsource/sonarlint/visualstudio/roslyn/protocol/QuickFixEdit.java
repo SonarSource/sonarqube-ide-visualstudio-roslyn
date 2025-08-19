@@ -38,7 +38,6 @@ public class QuickFixEdit {
   @SerializedName("NewText")
   private String newText;
 
-
   public int getStartLine() {
     return startLine;
   }

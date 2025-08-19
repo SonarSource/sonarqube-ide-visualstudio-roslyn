@@ -23,19 +23,19 @@ import com.google.gson.annotations.SerializedName;
 import java.util.Map;
 
 public class ActiveRuleDto {
-  @SerializedName("RuleId")
-  private final String ruleId;
+  @SerializedName("RuleKey")
+  private final String ruleKey;
 
   @SerializedName("Params")
   private final Map<String, String> params;
 
-  public ActiveRuleDto(String ruleId, Map<String, String> params) {
-    this.ruleId = ruleId;
+  public ActiveRuleDto(String ruleKey, Map<String, String> params) {
+    this.ruleKey = ruleKey;
     this.params = params;
   }
 
-  public String getRuleId() {
-    return ruleId;
+  public String getRuleKey() {
+    return ruleKey;
   }
 
   public Map<String, String> getParams() {
