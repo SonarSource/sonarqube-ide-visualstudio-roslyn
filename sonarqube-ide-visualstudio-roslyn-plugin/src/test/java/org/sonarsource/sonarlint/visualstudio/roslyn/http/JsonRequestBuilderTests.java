@@ -61,7 +61,7 @@ class JsonRequestBuilderTests {
   void buildBody_withFileNamesAndActiveRules_shouldReturnValidJson() {
     var fileNames = List.of("File1.cs", "File2.cs");
     var activeRules = List.of(createMockActiveRule("S100", new HashMap<>()), createMockActiveRule("S101", new HashMap<>()));
-    var expected = "{\"FileNames\":[\"File1.cs\",\"File2.cs\"],\"ActiveRules\":[{\"RuleId\":\"csharpsquid:S100\",\"Params\":{}},{\"RuleId\":\"csharpsquid:S101\",\"Params\":{}}]}";
+    var expected = "{\"FileNames\":[\"File1.cs\",\"File2.cs\"],\"ActiveRules\":[{\"RuleId\":\"csharpsquid:S100\",\"Parameters\":{}},{\"RuleId\":\"csharpsquid:S101\",\"Parameters\":{}}]}";
 
     var result = jsonParser.buildBody(fileNames, activeRules);
 
@@ -72,7 +72,7 @@ class JsonRequestBuilderTests {
   void buildBody_withActiveRules_shouldReturnRuleId() {
     var fileNames = new ArrayList<String>();
     var activeRule = createMockActiveRule("S100", new HashMap<>());
-    var expected = "{\"FileNames\":[],\"ActiveRules\":[{\"RuleId\":\"csharpsquid:S100\",\"Params\":{}}]}";
+    var expected = "{\"FileNames\":[],\"ActiveRules\":[{\"RuleId\":\"csharpsquid:S100\",\"Parameters\":{}}]}";
 
     var result = jsonParser.buildBody(fileNames, List.of(activeRule));
 
@@ -87,7 +87,7 @@ class JsonRequestBuilderTests {
     params.put("isRegularExpression", "true");
     var ruleWithParams = createMockActiveRule("S1003", params);
     var activeRules = Collections.singletonList(ruleWithParams);
-    var expected = "{\"FileNames\":[],\"ActiveRules\":[{\"RuleId\":\"csharpsquid:S1003\",\"Params\":{\"maximum\":\"10\",\"isRegularExpression\":\"true\"}}]}";
+    var expected = "{\"FileNames\":[],\"ActiveRules\":[{\"RuleId\":\"csharpsquid:S1003\",\"Parameters\":{\"maximum\":\"10\",\"isRegularExpression\":\"true\"}}]}";
 
     var result = jsonParser.buildBody(fileNames, activeRules);
 
