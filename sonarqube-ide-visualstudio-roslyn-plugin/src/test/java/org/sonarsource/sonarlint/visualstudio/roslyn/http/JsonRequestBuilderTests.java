@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.visualstudio.roslyn.http;
 
 import com.google.gson.JsonParser;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -47,8 +48,8 @@ class JsonRequestBuilderTests {
 
   @Test
   void buildBody_withEmptyCollections_shouldReturnValidJson() {
-    Collection<String> fileNames = Collections.emptyList();
-    Collection<ActiveRule> activeRules = Collections.emptyList();
+    var fileNames = new ArrayList<String>();
+    var activeRules = new ArrayList<ActiveRule>();
     var expected = "{\"FileNames\":[],\"ActiveRules\":[]}";
 
     var result = jsonParser.buildBody(fileNames, activeRules);
@@ -58,9 +59,9 @@ class JsonRequestBuilderTests {
 
   @Test
   void buildBody_withFileNamesAndActiveRules_shouldReturnValidJson() {
-    Collection<String> fileNames = List.of("File1.cs", "File2.cs");
-    Collection<ActiveRule> activeRules = List.of(createMockActiveRule("S100", new HashMap<>()), createMockActiveRule("S101", new HashMap<>()));
-    var expected = "{\"FileNames\":[\"File1.cs\",\"File2.cs\"],\"ActiveRules\":[{\"RuleKey\":\"S100\",\"Params\":{}},{\"RuleKey\":\"S101\",\"Params\":{}}]}";
+    var fileNames = List.of("File1.cs", "File2.cs");
+    var activeRules = List.of(createMockActiveRule("S100", new HashMap<>()), createMockActiveRule("S101", new HashMap<>()));
+    var expected = "{\"FileNames\":[\"File1.cs\",\"File2.cs\"],\"ActiveRules\":[{\"RuleId\":\"csharpsquid:S100\",\"Params\":{}},{\"RuleId\":\"csharpsquid:S101\",\"Params\":{}}]}";
 
     var result = jsonParser.buildBody(fileNames, activeRules);
 
@@ -68,14 +69,25 @@ class JsonRequestBuilderTests {
   }
 
   @Test
+  void buildBody_withActiveRules_shouldReturnRuleId() {
+    var fileNames = new ArrayList<String>();
+    var activeRule = createMockActiveRule("S100", new HashMap<>());
+    var expected = "{\"FileNames\":[],\"ActiveRules\":[{\"RuleId\":\"csharpsquid:S100\",\"Params\":{}}]}";
+
+    var result = jsonParser.buildBody(fileNames, List.of(activeRule));
+
+    assertThat(result).isEqualTo(expected);
+  }
+
+  @Test
   void buildBody_withActiveRulesWithParams_shouldIncludeParams() {
-    Collection<String> fileNames = Collections.emptyList();
-    Map<String, String> params = new HashMap<>();
+    var fileNames = new ArrayList<String>();
+    var params = new HashMap<String, String>();
     params.put("maximum", "10");
     params.put("isRegularExpression", "true");
-    ActiveRule ruleWithParams = createMockActiveRule("S1003", params);
-    Collection<ActiveRule> activeRules = Collections.singletonList(ruleWithParams);
-    var expected = "{\"FileNames\":[],\"ActiveRules\":[{\"RuleKey\":\"S1003\",\"Params\":{\"maximum\":\"10\",\"isRegularExpression\":\"true\"}}]}";
+    var ruleWithParams = createMockActiveRule("S1003", params);
+    var activeRules = Collections.singletonList(ruleWithParams);
+    var expected = "{\"FileNames\":[],\"ActiveRules\":[{\"RuleId\":\"csharpsquid:S1003\",\"Params\":{\"maximum\":\"10\",\"isRegularExpression\":\"true\"}}]}";
 
     var result = jsonParser.buildBody(fileNames, activeRules);
 
@@ -92,11 +104,11 @@ class JsonRequestBuilderTests {
 
   @Test
   void buildBody_withSpecialCharactersInFileNames_shouldEscapeProperly() {
-    Collection<String> fileNames = Arrays.asList(
+    var fileNames = Arrays.asList(
       "file with spaces.cs",
       "file\"with\"quotes.cs",
       "file\\with\\backslashes.cs");
-    Collection<ActiveRule> activeRules = Collections.emptyList();
+    var activeRules = new ArrayList<ActiveRule>();
     var expected = "{\"FileNames\":[\"file with spaces.cs\",\"file\\\"with\\\"quotes.cs\",\"file\\\\with\\\\backslashes.cs\"],\"ActiveRules\":[]}";
 
     var result = jsonParser.buildBody(fileNames, activeRules);
@@ -109,12 +121,13 @@ class JsonRequestBuilderTests {
     assertThat(fileNamesArray.get(2).getAsString()).hasToString("file\\with\\backslashes.cs");
   }
 
-  private ActiveRule createMockActiveRule(String ruleId, Map<String, String> params) {
+  private ActiveRule createMockActiveRule(String ruleKey, Map<String, String> params) {
     ActiveRule activeRule = mock(ActiveRule.class);
-    RuleKey ruleKey = mock(RuleKey.class);
+    RuleKey rule = mock(RuleKey.class);
 
-    when(ruleKey.rule()).thenReturn(ruleId);
-    when(activeRule.ruleKey()).thenReturn(ruleKey);
+    when(rule.toString()).thenReturn("csharpsquid:"+ruleKey);
+    when(rule.rule()).thenReturn(ruleKey);
+    when(activeRule.ruleKey()).thenReturn(rule);
     when(activeRule.params()).thenReturn(params);
 
     return activeRule;
