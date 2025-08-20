@@ -76,8 +76,8 @@ class SqvsRoslynSensorTests {
     underTest.describe(descriptor);
 
     assertThat(descriptor.name()).isEqualTo("SQVS-Roslyn");
-    assertThat(descriptor.languages()).containsOnly(SqvsRoslynPluginConstants.LANGUAGE_KEY);
-    assertThat(descriptor.ruleRepositories()).containsOnly(SqvsRoslynPluginConstants.REPOSITORY_KEY);
+    assertThat(descriptor.languages()).contains(CSharpLanguage.LANGUAGE_KEY, VbNetLanguage.LANGUAGE_KEY);
+    assertThat(descriptor.ruleRepositories()).contains(CSharpLanguage.REPOSITORY_KEY, VbNetLanguage.REPOSITORY_KEY);
   }
 
   @Test
@@ -112,7 +112,7 @@ class SqvsRoslynSensorTests {
 
     return TestInputFileBuilder.create("", "Foo.cs")
       .setModuleBaseDir(baseDir)
-      .setLanguage(SqvsRoslynPluginConstants.LANGUAGE_KEY)
+      .setLanguage(CSharpLanguage.LANGUAGE_KEY)
       .setCharset(StandardCharsets.UTF_8)
       .build();
   }

@@ -49,7 +49,7 @@ public class SqvsRoslynSensor implements Sensor {
   }
 
   private static void handle(SensorContext context, Diagnostic diag) {
-    var ruleKey = RuleKey.of(SqvsRoslynPluginConstants.REPOSITORY_KEY, diag.getId());
+    var ruleKey = RuleKey.of(CSharpLanguage.REPOSITORY_KEY, diag.getId());
     if (context.activeRules().find(ruleKey) != null) {
       var diagFilePath = Paths.get(diag.getFilename());
       var diagInputFile = findInputFile(context, diagFilePath);
@@ -123,13 +123,13 @@ public class SqvsRoslynSensor implements Sensor {
   public void describe(SensorDescriptor descriptor) {
     descriptor
       .name("SQVS-Roslyn")
-      .onlyOnLanguage(SqvsRoslynPluginConstants.LANGUAGE_KEY)
-      .createIssuesForRuleRepositories(SqvsRoslynPluginConstants.REPOSITORY_KEY);
+      .onlyOnLanguages(CSharpLanguage.LANGUAGE_KEY, VbNetLanguage.LANGUAGE_KEY)
+      .createIssuesForRuleRepositories(CSharpLanguage.REPOSITORY_KEY, VbNetLanguage.REPOSITORY_KEY);
   }
 
   @Override
   public void execute(SensorContext context) {
-    FilePredicate predicate = context.fileSystem().predicates().hasLanguage(SqvsRoslynPluginConstants.LANGUAGE_KEY);
+    FilePredicate predicate = context.fileSystem().predicates().hasLanguage(CSharpLanguage.LANGUAGE_KEY);
     if (!context.fileSystem().hasFiles(predicate)) {
       return;
     }
@@ -140,7 +140,7 @@ public class SqvsRoslynSensor implements Sensor {
     var inputFiles = StreamSupport.stream(
       context.fileSystem().inputFiles(predicate).spliterator(), false)
       .map(InputFile::absolutePath).toList();
-    var activeRules = context.activeRules().findByRepository(SqvsRoslynPluginConstants.REPOSITORY_KEY);
+    var activeRules = context.activeRules().findByRepository(CSharpLanguage.REPOSITORY_KEY);
     httpRequestHandler.analyze(inputFiles, activeRules);
     // TODO by https://sonarsource.atlassian.net/browse/SLVS-2426 send analysis results to SlCore
     // handle(context, diagnostic);
