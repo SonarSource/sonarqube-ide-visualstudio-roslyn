@@ -28,6 +28,7 @@ import static org.sonarsource.sonarlint.visualstudio.roslyn.CSharpLanguage.LANGU
 public class SqvsRoslynPluginPropertyDefinitions {
 
   public static final String PROP_PREFIX = "sonar.";
+  public static final String PLUGIN_PREFIX = "sqvs.";
   private static final String FILE_SUFFIXES_DESCRIPTION = "Comma-separated list of suffixes of files to analyze.";
 
   public static String getAnalyzerPath() {
