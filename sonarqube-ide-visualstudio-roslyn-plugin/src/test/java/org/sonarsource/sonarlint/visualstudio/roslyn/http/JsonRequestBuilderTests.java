@@ -23,7 +23,6 @@ import com.google.gson.JsonParser;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +30,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.rule.RuleKey;
+import org.sonarsource.sonarlint.visualstudio.roslyn.CSharpLanguage;
+import org.sonarsource.sonarlint.visualstudio.roslyn.VbNetLanguage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -59,9 +60,10 @@ class JsonRequestBuilderTests {
 
   @Test
   void buildBody_withFileNamesAndActiveRules_shouldReturnValidJson() {
-    var fileNames = List.of("File1.cs", "File2.cs");
-    var activeRules = List.of(createMockActiveRule("S100", new HashMap<>()), createMockActiveRule("S101", new HashMap<>()));
-    var expected = "{\"FileNames\":[\"File1.cs\",\"File2.cs\"],\"ActiveRules\":[{\"RuleId\":\"csharpsquid:S100\",\"Parameters\":{}},{\"RuleId\":\"csharpsquid:S101\",\"Parameters\":{}}]}";
+    var fileNames = List.of("File1.cs", "File2.vb");
+    var activeRules = List.of(createMockActiveRule("S100", CSharpLanguage.REPOSITORY_KEY, new HashMap<>()),
+      createMockActiveRule("S101", VbNetLanguage.REPOSITORY_KEY, new HashMap<>()));
+    var expected = "{\"FileNames\":[\"File1.cs\",\"File2.vb\"],\"ActiveRules\":[{\"RuleId\":\"csharpsquid:S100\",\"Parameters\":{}},{\"RuleId\":\"vbnet:S101\",\"Parameters\":{}}]}";
 
     var result = jsonParser.buildBody(fileNames, activeRules);
 
@@ -71,7 +73,7 @@ class JsonRequestBuilderTests {
   @Test
   void buildBody_withActiveRules_shouldReturnRuleId() {
     var fileNames = new ArrayList<String>();
-    var activeRule = createMockActiveRule("S100", new HashMap<>());
+    var activeRule = createMockActiveRule("S100", CSharpLanguage.REPOSITORY_KEY, new HashMap<>());
     var expected = "{\"FileNames\":[],\"ActiveRules\":[{\"RuleId\":\"csharpsquid:S100\",\"Parameters\":{}}]}";
 
     var result = jsonParser.buildBody(fileNames, List.of(activeRule));
@@ -85,9 +87,10 @@ class JsonRequestBuilderTests {
     var params = new HashMap<String, String>();
     params.put("maximum", "10");
     params.put("isRegularExpression", "true");
-    var ruleWithParams = createMockActiveRule("S1003", params);
-    var activeRules = Collections.singletonList(ruleWithParams);
-    var expected = "{\"FileNames\":[],\"ActiveRules\":[{\"RuleId\":\"csharpsquid:S1003\",\"Parameters\":{\"maximum\":\"10\",\"isRegularExpression\":\"true\"}}]}";
+    var csharpRuleWithParams = createMockActiveRule("S1003", CSharpLanguage.REPOSITORY_KEY, params);
+    var vbnetRuleWithParams = createMockActiveRule("S1066", VbNetLanguage.REPOSITORY_KEY, params);
+    var activeRules = List.of(csharpRuleWithParams, vbnetRuleWithParams);
+    var expected = "{\"FileNames\":[],\"ActiveRules\":[{\"RuleId\":\"csharpsquid:S1003\",\"Parameters\":{\"maximum\":\"10\",\"isRegularExpression\":\"true\"}},{\"RuleId\":\"vbnet:S1066\",\"Parameters\":{\"maximum\":\"10\",\"isRegularExpression\":\"true\"}}]}";
 
     var result = jsonParser.buildBody(fileNames, activeRules);
 
@@ -121,11 +124,11 @@ class JsonRequestBuilderTests {
     assertThat(fileNamesArray.get(2).getAsString()).hasToString("file\\with\\backslashes.cs");
   }
 
-  private ActiveRule createMockActiveRule(String ruleKey, Map<String, String> params) {
+  private ActiveRule createMockActiveRule(String ruleKey, String repositoryKey, Map<String, String> params) {
     ActiveRule activeRule = mock(ActiveRule.class);
     RuleKey rule = mock(RuleKey.class);
 
-    when(rule.toString()).thenReturn("csharpsquid:"+ruleKey);
+    when(rule.toString()).thenReturn(repositoryKey + ":" + ruleKey);
     when(rule.rule()).thenReturn(ruleKey);
     when(activeRule.ruleKey()).thenReturn(rule);
     when(activeRule.params()).thenReturn(params);
