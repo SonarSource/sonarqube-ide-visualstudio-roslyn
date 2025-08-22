@@ -17,17 +17,30 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.visualstudio.roslyn.http;
+package org.sonarsource.sonarlint.visualstudio.roslyn.protocol;
 
 import com.google.gson.annotations.SerializedName;
 import java.util.List;
-import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssue;
 
-public class AnalysisResponseDto {
-  @SerializedName("RoslynIssues")
-  private List<RoslynIssue> roslynIssues;
+public class RoslynIssue {
+  @SerializedName("RuleId")
+  private String ruleId;
 
-  public List<RoslynIssue> getRoslynIssues() {
-    return roslynIssues;
+  @SerializedName("PrimaryLocation")
+  private RoslynIssueLocation primaryLocation;
+
+  @SerializedName("Flows")
+  private List<RoslynIssueFlow> flows;
+
+  public String getRuleId() {
+    return ruleId;
+  }
+
+  public RoslynIssueLocation getPrimaryLocation() {
+    return primaryLocation;
+  }
+
+  public List<RoslynIssueFlow> getFlows() {
+    return flows;
   }
 }

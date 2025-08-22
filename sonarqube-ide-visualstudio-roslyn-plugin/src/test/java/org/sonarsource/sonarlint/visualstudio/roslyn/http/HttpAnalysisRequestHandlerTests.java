@@ -85,7 +85,7 @@ class HttpAnalysisRequestHandlerTests {
   private HttpResponse<String> mockResponseWithOneDiagnostic(int statusCode) throws IOException, InterruptedException {
     var mockResponse = mock(HttpResponse.class);
     when(mockResponse.statusCode()).thenReturn(statusCode);
-    when(mockResponse.body()).thenReturn("{\"Diagnostics\":[{\"Id\":\"S100\"}]}");
+    when(mockResponse.body()).thenReturn("{\"RoslynIssues\":[{\"RuleId\":\"S100\"}]}");
     when(httpClientHandler.sendRequest(fileNames, activeRules)).thenReturn(mockResponse);
 
     return mockResponse;

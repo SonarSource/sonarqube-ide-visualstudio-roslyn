@@ -20,23 +20,27 @@
 package org.sonarsource.sonarlint.visualstudio.roslyn.protocol;
 
 import com.google.gson.annotations.SerializedName;
-import javax.annotation.Nullable;
 
-public class Diagnostic extends DiagnosticLocation {
+public class RoslynIssueLocation {
+  @SerializedName("FilePath")
+  private String filePath;
 
-  @SerializedName("Id")
-  private String id;
+  @SerializedName("Message")
+  private String message;
 
-  @SerializedName("AdditionalLocations")
-  private DiagnosticLocation[] additionalLocations;
+  @SerializedName("TextRange")
+  private RoslynIssueTextRange textRange;
 
-  public String getId() {
-    return id;
+  public String getFilePath() {
+    return filePath;
   }
 
-  @Nullable
-  public DiagnosticLocation[] getAdditionalLocations() {
-    return additionalLocations;
+  public String getMessage() {
+    return message;
+  }
+
+  public RoslynIssueTextRange getTextRange() {
+    return textRange;
   }
 
 }
