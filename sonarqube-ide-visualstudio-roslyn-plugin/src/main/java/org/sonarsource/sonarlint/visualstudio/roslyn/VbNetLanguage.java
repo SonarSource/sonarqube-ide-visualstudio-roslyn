@@ -29,8 +29,8 @@ public class VbNetLanguage extends AbstractLanguage {
   public static final String LANGUAGE_NAME = "VB.NET";
   public static final String REPOSITORY_KEY = "vbnet";
   public static final String FILE_SUFFIXES_DEFVALUE = ".vb";
-  public static final String FILE_SUFFIXES_KEY = SqvsRoslynPluginPropertyDefinitions.PROP_PREFIX + SqvsRoslynPluginPropertyDefinitions.PLUGIN_PREFIX + LANGUAGE_KEY
-    + ".file.suffixes";
+  public static final String FILE_SUFFIXES_KEY = SqvsRoslynPluginPropertyDefinitions.PROP_PREFIX + LANGUAGE_KEY + "." + SqvsRoslynPluginPropertyDefinitions.PLUGIN_PREFIX
+    + "file.suffixes";
   public static final String FILE_SUFFIXES_NAME = "VB.NET file suffixes";
   private final Configuration configuration;
 

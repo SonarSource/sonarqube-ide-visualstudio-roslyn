@@ -45,7 +45,7 @@ class VbNetLanguageTests {
     assertThat(VbNetLanguage.LANGUAGE_NAME).isEqualTo("VB.NET");
     assertThat(VbNetLanguage.REPOSITORY_KEY).isEqualTo("vbnet");
     assertThat(VbNetLanguage.FILE_SUFFIXES_DEFVALUE).isEqualTo(".vb");
-    assertThat(VbNetLanguage.FILE_SUFFIXES_KEY).isEqualTo("sonar.sqvs.vbnet.file.suffixes");
+    assertThat(VbNetLanguage.FILE_SUFFIXES_KEY).isEqualTo("sonar.vbnet.sqvs.file.suffixes");
   }
 
   @Test
