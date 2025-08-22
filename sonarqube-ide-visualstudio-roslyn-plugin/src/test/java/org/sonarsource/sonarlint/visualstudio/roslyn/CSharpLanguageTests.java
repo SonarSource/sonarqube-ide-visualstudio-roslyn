@@ -46,13 +46,13 @@ class CSharpLanguageTests {
     assertThat(CSharpLanguage.LANGUAGE_KEY).isEqualTo("cs");
     assertThat(CSharpLanguage.LANGUAGE_NAME).isEqualTo("C#");
     assertThat(CSharpLanguage.REPOSITORY_KEY).isEqualTo("csharpsquid");
-    assertThat(CSharpLanguage.FILE_SUFFIXES_DEFVALUE).isEqualTo(".cs");
+    assertThat(CSharpLanguage.FILE_SUFFIXES_DEFVALUE).isEqualTo(".cs,.cshtml,.razor");
     assertThat(CSharpLanguage.FILE_SUFFIXES_KEY).isEqualTo("sonar.cs.sqvs.file.suffixes");
   }
 
   @Test
   void shouldGetDefaultFileSuffixes() {
-    assertThat(csharp.getFileSuffixes()).containsOnly(".cs");
+    assertThat(csharp.getFileSuffixes()).contains(".cs", ".cshtml", ".razor");
   }
 
   @Test

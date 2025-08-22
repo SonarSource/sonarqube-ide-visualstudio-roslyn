@@ -28,7 +28,7 @@ public class CSharpLanguage extends AbstractLanguage {
   public static final String LANGUAGE_KEY = "cs";
   public static final String LANGUAGE_NAME = "C#";
   public static final String REPOSITORY_KEY = "csharpsquid";
-  public static final String FILE_SUFFIXES_DEFVALUE = ".cs";
+  public static final String FILE_SUFFIXES_DEFVALUE = ".cs,.cshtml,.razor";
   public static final String FILE_SUFFIXES_KEY = SqvsRoslynPluginPropertyDefinitions.PROP_PREFIX + LANGUAGE_KEY + "." + SqvsRoslynPluginPropertyDefinitions.PLUGIN_PREFIX
     + "file.suffixes";
   public static final String FILE_SUFFIXES_NAME = "CSharp file suffixes";

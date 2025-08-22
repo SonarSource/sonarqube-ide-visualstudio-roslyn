@@ -44,13 +44,13 @@ class VbNetLanguageTests {
     assertThat(VbNetLanguage.LANGUAGE_KEY).isEqualTo("vbnet");
     assertThat(VbNetLanguage.LANGUAGE_NAME).isEqualTo("VB.NET");
     assertThat(VbNetLanguage.REPOSITORY_KEY).isEqualTo("vbnet");
-    assertThat(VbNetLanguage.FILE_SUFFIXES_DEFVALUE).isEqualTo(".vb");
+    assertThat(VbNetLanguage.FILE_SUFFIXES_DEFVALUE).isEqualTo(".vb,.vbhtml");
     assertThat(VbNetLanguage.FILE_SUFFIXES_KEY).isEqualTo("sonar.vbnet.sqvs.file.suffixes");
   }
 
   @Test
   void shouldGetDefaultFileSuffixes() {
-    assertThat(vbNetLanguage.getFileSuffixes()).containsOnly(".vb");
+    assertThat(vbNetLanguage.getFileSuffixes()).contains(".vb", ".vbhtml");
   }
 
   @Test
