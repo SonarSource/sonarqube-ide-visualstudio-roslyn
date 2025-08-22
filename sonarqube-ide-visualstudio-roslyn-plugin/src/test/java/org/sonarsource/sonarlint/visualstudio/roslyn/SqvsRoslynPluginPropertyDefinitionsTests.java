@@ -27,7 +27,6 @@ class SqvsRoslynPluginPropertyDefinitionsTests {
 
   @Test
   void shouldHaveExpectedPropertyDefinitions() {
-    assertThat(SqvsRoslynPluginPropertyDefinitions.getFileSuffixProperty()).isEqualTo("sonar.cs.file.suffixes");
     assertThat(SqvsRoslynPluginPropertyDefinitions.getAnalyzerPath()).isEqualTo("sonar.cs.internal.analyzerPath");
     assertThat(SqvsRoslynPluginPropertyDefinitions.getServerPort()).isEqualTo("sonar.cs.internal.roslynAnalyzerServerPort");
     assertThat(SqvsRoslynPluginPropertyDefinitions.getServerToken()).isEqualTo("sonar.cs.internal.roslynAnalyzerServerToken");

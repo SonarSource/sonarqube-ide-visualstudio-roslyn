@@ -30,16 +30,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class SqvsRoslynPluginTests {
 
+  private static final int PROPERTY_DEFINITIONS_COUNT = 5;
+  private static final int REGISTERED_CLASSES_COUNT = 6;
+
   @Test
   void getExtensions() {
     SonarRuntime sonarRuntime = SonarRuntimeImpl.forSonarLint(Version.create(7, 9));
-
     Plugin.Context context = new Plugin.Context(sonarRuntime);
     new SqvsRoslynPlugin().define(context);
 
     List<?> extensions = context.getExtensions();
 
-    assertThat(extensions).hasSize(9);
+    assertThat(extensions).hasSize(PROPERTY_DEFINITIONS_COUNT + REGISTERED_CLASSES_COUNT);
   }
 
 }

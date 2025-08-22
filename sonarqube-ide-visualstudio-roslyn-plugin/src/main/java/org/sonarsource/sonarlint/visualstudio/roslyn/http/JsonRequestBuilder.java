@@ -35,7 +35,7 @@ public class JsonRequestBuilder {
   public String buildBody(Collection<String> fileNames, Collection<ActiveRule> activeRules) {
     var activeRuleDtos = activeRules.stream()
       .map(rule -> new ActiveRuleDto(
-        rule.ruleKey().rule(),
+        rule.ruleKey().toString(),
         rule.params()))
       .toList();
     var analysisRequest = new AnalysisRequestDto(fileNames, activeRuleDtos);

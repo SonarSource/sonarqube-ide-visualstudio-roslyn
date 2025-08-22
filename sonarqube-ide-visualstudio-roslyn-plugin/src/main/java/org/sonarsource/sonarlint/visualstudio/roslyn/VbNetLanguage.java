@@ -23,18 +23,18 @@ import java.util.Objects;
 import org.sonar.api.config.Configuration;
 import org.sonar.api.resources.AbstractLanguage;
 
-public class CSharpLanguage extends AbstractLanguage {
+public class VbNetLanguage extends AbstractLanguage {
 
-  public static final String LANGUAGE_KEY = "cs";
-  public static final String LANGUAGE_NAME = "C#";
-  public static final String REPOSITORY_KEY = "csharpsquid";
-  public static final String FILE_SUFFIXES_DEFVALUE = ".cs,.cshtml,.razor";
+  public static final String LANGUAGE_KEY = "vbnet";
+  public static final String LANGUAGE_NAME = "VB.NET";
+  public static final String REPOSITORY_KEY = "vbnet";
+  public static final String FILE_SUFFIXES_DEFVALUE = ".vb,.vbhtml";
   public static final String FILE_SUFFIXES_KEY = SqvsRoslynPluginPropertyDefinitions.PROP_PREFIX + LANGUAGE_KEY + "." + SqvsRoslynPluginPropertyDefinitions.PLUGIN_PREFIX
     + "file.suffixes";
-  public static final String FILE_SUFFIXES_NAME = "CSharp file suffixes";
+  public static final String FILE_SUFFIXES_NAME = "VB.NET file suffixes";
   private final Configuration configuration;
 
-  public CSharpLanguage(Configuration configuration) {
+  public VbNetLanguage(Configuration configuration) {
     super(LANGUAGE_KEY, LANGUAGE_NAME);
     this.configuration = configuration;
   }
@@ -46,7 +46,7 @@ public class CSharpLanguage extends AbstractLanguage {
 
   @Override
   public boolean equals(Object o) {
-    return super.equals(o) && o instanceof CSharpLanguage cSharpLanguage && configuration == cSharpLanguage.configuration;
+    return super.equals(o) && o instanceof VbNetLanguage vbNetLanguage && configuration == vbNetLanguage.configuration;
   }
 
   @Override

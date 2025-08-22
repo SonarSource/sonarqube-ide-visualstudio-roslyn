@@ -181,7 +181,7 @@
         <groupId>org.sonarsource.sonar-packaging-maven-plugin</groupId>
         <artifactId>sonar-packaging-maven-plugin</artifactId>
         <configuration>
-          <pluginName>C# Code Quality and Security (SQVS-Roslyn)</pluginName>
+          <pluginName>C# and VB.NET Code Quality and Security (SQVS-Roslyn)</pluginName>
           <pluginKey>sqvs-roslyn</pluginKey>
           <pluginClass>org.sonarsource.sonarlint.visualstudio.roslyn.SqvsRoslynPlugin</pluginClass>
           <skipDependenciesPackaging>true</skipDependenciesPackaging>

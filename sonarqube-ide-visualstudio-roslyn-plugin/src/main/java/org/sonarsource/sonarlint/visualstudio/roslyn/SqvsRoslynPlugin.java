@@ -38,6 +38,7 @@ public class SqvsRoslynPlugin implements Plugin {
     }
 
     context.addExtension(CSharpLanguage.class);
+    context.addExtension(VbNetLanguage.class);
 
     context.addExtensions(new SqvsRoslynPluginPropertyDefinitions().create());
   }

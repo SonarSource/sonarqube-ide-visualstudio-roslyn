@@ -23,17 +23,13 @@ import java.util.ArrayList;
 import java.util.List;
 import org.sonar.api.config.PropertyDefinition;
 
-import static org.sonarsource.sonarlint.visualstudio.roslyn.SqvsRoslynPluginConstants.LANGUAGE_KEY;
+import static org.sonarsource.sonarlint.visualstudio.roslyn.CSharpLanguage.LANGUAGE_KEY;
 
 public class SqvsRoslynPluginPropertyDefinitions {
 
-  static final String FILE_SUFFIXES_DEFVALUE = ".cs";
-  private static final String PROP_PREFIX = "sonar.";
-  static final String FILE_SUFFIXES_KEY = PROP_PREFIX + SqvsRoslynPluginConstants.LANGUAGE_KEY + ".file.suffixes";
-
-  public static String getFileSuffixProperty() {
-    return PROP_PREFIX + LANGUAGE_KEY + ".file.suffixes";
-  }
+  public static final String PROP_PREFIX = "sonar.";
+  public static final String PLUGIN_PREFIX = "sqvs.";
+  private static final String FILE_SUFFIXES_DESCRIPTION = "Comma-separated list of suffixes of files to analyze.";
 
   public static String getAnalyzerPath() {
     return PROP_PREFIX + LANGUAGE_KEY + ".internal.analyzerPath";
@@ -50,11 +46,20 @@ public class SqvsRoslynPluginPropertyDefinitions {
   public List<PropertyDefinition> create() {
     List<PropertyDefinition> result = new ArrayList<>();
     result.add(
-      PropertyDefinition.builder(getFileSuffixProperty())
-        .category(SqvsRoslynPluginConstants.LANGUAGE_NAME)
-        .defaultValue(FILE_SUFFIXES_DEFVALUE)
-        .name("File suffixes")
-        .description("Comma-separated list of suffixes of files to analyze.")
+      PropertyDefinition.builder(CSharpLanguage.FILE_SUFFIXES_KEY)
+        .category(CSharpLanguage.LANGUAGE_NAME)
+        .defaultValue(CSharpLanguage.FILE_SUFFIXES_DEFVALUE)
+        .name(CSharpLanguage.FILE_SUFFIXES_NAME)
+        .description(FILE_SUFFIXES_DESCRIPTION)
+        .multiValues(true)
+        .onConfigScopes(PropertyDefinition.ConfigScope.PROJECT)
+        .build());
+    result.add(
+      PropertyDefinition.builder(VbNetLanguage.FILE_SUFFIXES_KEY)
+        .category(VbNetLanguage.LANGUAGE_NAME)
+        .defaultValue(VbNetLanguage.FILE_SUFFIXES_DEFVALUE)
+        .name(VbNetLanguage.FILE_SUFFIXES_NAME)
+        .description(FILE_SUFFIXES_DESCRIPTION)
         .multiValues(true)
         .onConfigScopes(PropertyDefinition.ConfigScope.PROJECT)
         .build());

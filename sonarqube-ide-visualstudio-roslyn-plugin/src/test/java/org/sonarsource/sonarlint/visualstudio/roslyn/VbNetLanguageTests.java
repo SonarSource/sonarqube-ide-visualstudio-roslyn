@@ -28,59 +28,58 @@ import org.sonar.api.utils.System2;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class CSharpLanguageTests {
-
+class VbNetLanguageTests {
   private MapSettings settings;
-  private CSharpLanguage csharp;
+  private VbNetLanguage vbNetLanguage;
 
   @BeforeEach
   void init() {
-    PropertyDefinitions defs = new PropertyDefinitions(System2.INSTANCE,
-      new SqvsRoslynPluginPropertyDefinitions().create());
-    settings = new MapSettings(defs);
-    csharp = new CSharpLanguage(settings.asConfig());
+    var propertyDefinitions = new PropertyDefinitions(System2.INSTANCE, new SqvsRoslynPluginPropertyDefinitions().create());
+    settings = new MapSettings(propertyDefinitions);
+    vbNetLanguage = new VbNetLanguage(settings.asConfig());
   }
 
   @Test
   void shouldHaveExpectedProperties() {
-    assertThat(CSharpLanguage.LANGUAGE_KEY).isEqualTo("cs");
-    assertThat(CSharpLanguage.LANGUAGE_NAME).isEqualTo("C#");
-    assertThat(CSharpLanguage.REPOSITORY_KEY).isEqualTo("csharpsquid");
-    assertThat(CSharpLanguage.FILE_SUFFIXES_DEFVALUE).isEqualTo(".cs,.cshtml,.razor");
-    assertThat(CSharpLanguage.FILE_SUFFIXES_KEY).isEqualTo("sonar.cs.sqvs.file.suffixes");
+    assertThat(VbNetLanguage.LANGUAGE_KEY).isEqualTo("vbnet");
+    assertThat(VbNetLanguage.LANGUAGE_NAME).isEqualTo("VB.NET");
+    assertThat(VbNetLanguage.REPOSITORY_KEY).isEqualTo("vbnet");
+    assertThat(VbNetLanguage.FILE_SUFFIXES_DEFVALUE).isEqualTo(".vb,.vbhtml");
+    assertThat(VbNetLanguage.FILE_SUFFIXES_KEY).isEqualTo("sonar.vbnet.sqvs.file.suffixes");
   }
 
   @Test
   void shouldGetDefaultFileSuffixes() {
-    assertThat(csharp.getFileSuffixes()).contains(".cs", ".cshtml", ".razor");
+    assertThat(vbNetLanguage.getFileSuffixes()).contains(".vb", ".vbhtml");
   }
 
   @Test
   void shouldGetCustomFileSuffixes() {
-    settings.setProperty(CSharpLanguage.FILE_SUFFIXES_KEY, ".cs,.csharp");
-    assertThat(csharp.getFileSuffixes()).containsOnly(".cs", ".csharp");
+    settings.setProperty(VbNetLanguage.FILE_SUFFIXES_KEY, ".vb, .vbnet");
+
+    assertThat(vbNetLanguage.getFileSuffixes()).containsOnly(".vb", ".vbnet");
   }
 
   @Test
   void equals_and_hashCode_considers_configuration() {
-    MapSettings otherSettings = new MapSettings();
+    var otherSettings = new MapSettings();
     otherSettings.setProperty("key", "value");
-    CSharpLanguage otherCSharp = new CSharpLanguage(otherSettings.asConfig());
-    CSharpLanguage sameCSharp = new CSharpLanguage(settings.asConfig());
-    FakeCSharp fakeCSharp = new FakeCSharp();
+    var otherVbNet = new VbNetLanguage(otherSettings.asConfig());
+    var sameVbNet = new VbNetLanguage(settings.asConfig());
+    var fakeVbNet = new VbNetLanguageTests.FakeVbNet();
 
-    assertThat(csharp).isEqualTo(sameCSharp)
-      .isNotEqualTo(otherCSharp)
-      .isNotEqualTo(fakeCSharp)
+    assertThat(vbNetLanguage).isEqualTo(sameVbNet)
+      .isNotEqualTo(otherVbNet)
+      .isNotEqualTo(fakeVbNet)
       .isNotEqualTo(null)
-      .hasSameHashCodeAs(sameCSharp);
-    assertThat(csharp.hashCode()).isNotEqualTo(otherCSharp.hashCode());
+      .hasSameHashCodeAs(sameVbNet);
+    assertThat(vbNetLanguage.hashCode()).isNotEqualTo(otherVbNet.hashCode());
   }
 
-  private class FakeCSharp extends AbstractLanguage {
+  private class FakeVbNet extends AbstractLanguage {
 
-    public FakeCSharp() {
-      super(CSharpLanguage.LANGUAGE_KEY, CSharpLanguage.LANGUAGE_NAME);
+    public FakeVbNet() {
+      super(VbNetLanguage.LANGUAGE_KEY, VbNetLanguage.LANGUAGE_NAME);
     }
 
     @Override

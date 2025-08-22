@@ -24,7 +24,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import javax.annotation.Nullable;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,6 +35,8 @@ import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.TextRange;
 import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
 import org.sonar.api.batch.rule.Severity;
+import org.sonar.api.batch.rule.internal.ActiveRulesBuilder;
+import org.sonar.api.batch.rule.internal.NewActiveRule;
 import org.sonar.api.batch.sensor.internal.DefaultSensorDescriptor;
 import org.sonar.api.batch.sensor.internal.SensorContextTester;
 import org.sonar.api.batch.sensor.issue.NewIssue;
@@ -59,6 +60,7 @@ class SqvsRoslynSensorTests {
   @RegisterExtension
   LogTesterJUnit5 logTester = new LogTesterJUnit5();
   private HttpAnalysisRequestHandler analysisRequestHandler;
+  private SensorContextTester sensorContext;
   private SqvsRoslynSensor underTest;
   private Path baseDir;
 
@@ -66,6 +68,7 @@ class SqvsRoslynSensorTests {
   void prepare(@TempDir Path tmp) throws Exception {
     analysisRequestHandler = mock(HttpAnalysisRequestHandler.class);
     baseDir = tmp.toRealPath();
+    sensorContext = SensorContextTester.create(baseDir);
     underTest = new SqvsRoslynSensor(analysisRequestHandler);
   }
 
@@ -76,29 +79,69 @@ class SqvsRoslynSensorTests {
     underTest.describe(descriptor);
 
     assertThat(descriptor.name()).isEqualTo("SQVS-Roslyn");
-    assertThat(descriptor.languages()).containsOnly(SqvsRoslynPluginConstants.LANGUAGE_KEY);
-    assertThat(descriptor.ruleRepositories()).containsOnly(SqvsRoslynPluginConstants.REPOSITORY_KEY);
+    assertThat(descriptor.languages()).contains(CSharpLanguage.LANGUAGE_KEY, VbNetLanguage.LANGUAGE_KEY);
+    assertThat(descriptor.ruleRepositories()).contains(CSharpLanguage.REPOSITORY_KEY, VbNetLanguage.REPOSITORY_KEY);
   }
 
   @Test
   void noopIfNoFiles() {
-    SensorContextTester sensorContext = SensorContextTester.create(baseDir);
-
     underTest.execute(sensorContext);
 
     verifyNoInteractions(analysisRequestHandler);
   }
 
   @Test
-  void analyzeCsFile_callsHttpRequest() throws Exception {
-    SensorContextTester sensorContext = SensorContextTester.create(baseDir);
+  void analyzeCsFile_callsHttpRequestWithCorrectParameters() throws Exception {
     var fileName = "Foo.cs";
     mockInputFile(sensorContext, fileName, "Console.WriteLine(\"Hello World!\");");
+    sensorContext.setActiveRules(new ActiveRulesBuilder()
+      .addRule(new NewActiveRule.Builder().setRuleKey(RuleKey.of("foo", "bar")).build())
+      .addRule(new NewActiveRule.Builder().setRuleKey(RuleKey.of(CSharpLanguage.REPOSITORY_KEY, "S123")).build())
+      .build());
 
     underTest.execute(sensorContext);
 
     verify(analysisRequestHandler).analyze(argThat(fileNames -> fileNames.stream().anyMatch(file -> file.contains(fileName))),
-      argThat(Collection::isEmpty));
+      argThat(activeRules -> activeRules.size() == 1 && activeRules.stream().findFirst().get().ruleKey().rule().equals("S123")));
+  }
+
+  @Test
+  void analyzeVbNetFile_callsHttpRequestWithCorrectParameters() throws Exception {
+    var fileName = "Foo.vb";
+    mockInputFile(sensorContext, fileName, "Console.WriteLine(\"Hello World!\");");
+    sensorContext.setActiveRules(new ActiveRulesBuilder()
+      .addRule(new NewActiveRule.Builder().setRuleKey(RuleKey.of("foo", "bar")).build())
+      .addRule(new NewActiveRule.Builder().setRuleKey(RuleKey.of(VbNetLanguage.REPOSITORY_KEY, "S456")).build())
+      .build());
+
+    underTest.execute(sensorContext);
+
+    verify(analysisRequestHandler).analyze(argThat(fileNames -> fileNames.stream().anyMatch(file -> file.contains(fileName))),
+      argThat(activeRules -> activeRules.size() == 1 && activeRules.stream().findFirst().get().ruleKey().rule().equals("S456")));
+  }
+
+  @Test
+  void analyzeCsAndVbNetFiles_callsHttpRequestWithCorrectParameters() throws Exception {
+    mockInputFiles(sensorContext, "foo.cs", "boo.vb");
+    sensorContext.setActiveRules(new ActiveRulesBuilder()
+      .addRule(new NewActiveRule.Builder().setRuleKey(RuleKey.of("foo", "bar")).build())
+      .addRule(new NewActiveRule.Builder().setRuleKey(RuleKey.of(CSharpLanguage.REPOSITORY_KEY, "S123")).build())
+      .addRule(new NewActiveRule.Builder().setRuleKey(RuleKey.of(VbNetLanguage.REPOSITORY_KEY, "S456")).build())
+      .build());
+
+    underTest.execute(sensorContext);
+
+    verify(analysisRequestHandler).analyze(argThat(fileNames -> fileNames.size() == 2 &&
+        fileNames.stream().anyMatch(file -> file.contains("foo.cs") || file.contains("boo.vb"))),
+      argThat(activeRules -> activeRules.size() == 2 &&
+        activeRules.stream().anyMatch(rule -> rule.ruleKey().rule().equals("S123") || rule.ruleKey().rule().contains("S456"))));
+  }
+
+  private void mockInputFiles(SensorContextTester sensorContextTester, String... fileNames) throws IOException {
+    for (var fileName: fileNames)
+    {
+      mockInputFile(sensorContextTester, fileName, "some content");
+    }
   }
 
   private void mockInputFile(SensorContextTester sensorContextTester, String fileName, String content) throws IOException {
@@ -109,10 +152,11 @@ class SqvsRoslynSensorTests {
   private InputFile createInputFile(String fileName, String content) throws IOException {
     Path filePath = baseDir.resolve(fileName);
     Files.write(filePath, content.getBytes(StandardCharsets.UTF_8));
+    var languageKey = fileName.endsWith(".vb") ? VbNetLanguage.LANGUAGE_KEY : CSharpLanguage.LANGUAGE_KEY;
 
-    return TestInputFileBuilder.create("", "Foo.cs")
+    return TestInputFileBuilder.create("", filePath.toString())
       .setModuleBaseDir(baseDir)
-      .setLanguage(SqvsRoslynPluginConstants.LANGUAGE_KEY)
+      .setLanguage(languageKey)
       .setCharset(StandardCharsets.UTF_8)
       .build();
   }
