@@ -28,7 +28,7 @@ import org.sonar.api.scanner.ScannerSide;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.api.sonarlint.SonarLintSide;
-import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.Diagnostic;
+import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssue;
 
 @ScannerSide
 @SonarLintSide
@@ -40,21 +40,22 @@ public class HttpAnalysisRequestHandler {
     this.httpClientFactory = httpClientFactory;
   }
 
-  public Collection<Diagnostic> analyze(Collection<String> fileNames, Collection<ActiveRule> activeRules) {
-    Collection<Diagnostic> diagnostics = new ArrayList<>();
+  public Collection<RoslynIssue> analyze(Collection<String> fileNames, Collection<ActiveRule> activeRules) {
+    Collection<RoslynIssue> roslynIssues = new ArrayList<>();
     try {
       var response = httpClientFactory.sendRequest(fileNames, activeRules);
       if (response.statusCode() != HttpURLConnection.HTTP_OK) {
         LOG.error("Response from server is {}.", response.statusCode());
-        return diagnostics;
+        return roslynIssues;
       }
 
       var responseDto = new Gson().fromJson(response.body(), AnalysisResponseDto.class);
-      if (responseDto != null) {
-        diagnostics = responseDto.diagnostics();
-        // TODO by https://sonarsource.atlassian.net/browse/SLVS-2426: remove log that is here only for testing purposes
-        LOG.info("sqvs-roslyn: received diagnostics {}.", diagnostics.size());
+      if (responseDto == null) {
+        LOG.warn("No body received from the server.");
+        return roslynIssues;
       }
+
+      roslynIssues = responseDto.getRoslynIssues();
     } catch (InterruptedException e) {
       LOG.debug("Interrupted!", e);
       Thread.currentThread().interrupt();
@@ -62,6 +63,6 @@ public class HttpAnalysisRequestHandler {
       throw new IllegalStateException("Response crashed due to: " + e.getMessage(), e.fillInStackTrace());
     }
 
-    return diagnostics;
+    return roslynIssues;
   }
 }

@@ -43,7 +43,7 @@ class HttpAnalysisRequestHandlerTests {
   private HttpClientHandler httpClientHandler;
   private HttpAnalysisRequestHandler analysisRequestHandler;
   @RegisterExtension
-  private LogTesterJUnit5 logTester = new LogTesterJUnit5();
+  private final LogTesterJUnit5 logTester = new LogTesterJUnit5();
 
   @BeforeEach
   void init() {
@@ -52,8 +52,8 @@ class HttpAnalysisRequestHandlerTests {
   }
 
   @Test
-  void analyze_requestSucceeds_ReturnsDiagnostics() throws IOException, InterruptedException {
-    mockResponseWithOneDiagnostic(200);
+  void analyze_requestSucceeds_ReturnsIssues() throws IOException, InterruptedException {
+    mockResponseWithOneIssue(200);
 
     var result = analysisRequestHandler.analyze(fileNames, activeRules);
 
@@ -62,8 +62,18 @@ class HttpAnalysisRequestHandlerTests {
   }
 
   @Test
-  void analyze_requestFails_returnsEmptyDiagnostics() throws IOException, InterruptedException {
-    mockResponseWithOneDiagnostic(404);
+  void analyze_requestSucceedsWithEmptyBody_logsAndReturnsEmptyIssues() throws IOException, InterruptedException {
+    mockResponse(200, "");
+
+    var result = analysisRequestHandler.analyze(fileNames, activeRules);
+
+    assertThat(result).isEmpty();
+    assertThat(logTester.logs(LoggerLevel.WARN)).contains("No body received from the server.");
+  }
+
+  @Test
+  void analyze_requestFails_returnsEmptyIssues() throws IOException, InterruptedException {
+    mockResponseWithOneIssue(404);
 
     var result = analysisRequestHandler.analyze(fileNames, activeRules);
 
@@ -73,7 +83,7 @@ class HttpAnalysisRequestHandlerTests {
   }
 
   @Test
-  void analyze_throws_logsAndReturnsEmptyDiagnostics() throws IOException, InterruptedException {
+  void analyze_throws_logsAndReturnsEmptyIssues() throws IOException, InterruptedException {
     var exceptionMessage = "message";
     when(httpClientHandler.sendRequest(fileNames, activeRules)).thenThrow(new RuntimeException(exceptionMessage));
 
@@ -82,12 +92,14 @@ class HttpAnalysisRequestHandlerTests {
     assertThat(thrown).hasMessageContaining("Response crashed due to: " + exceptionMessage);
   }
 
-  private HttpResponse<String> mockResponseWithOneDiagnostic(int statusCode) throws IOException, InterruptedException {
+  private void mockResponseWithOneIssue(int statusCode) throws IOException, InterruptedException {
+    mockResponse(statusCode, "{\"RoslynIssues\":[{\"RuleId\":\"S100\"}]}");
+  }
+
+  private void mockResponse(int statusCode, String body) throws IOException, InterruptedException {
     var mockResponse = mock(HttpResponse.class);
     when(mockResponse.statusCode()).thenReturn(statusCode);
-    when(mockResponse.body()).thenReturn("{\"RoslynIssues\":[{\"RuleId\":\"S100\"}]}");
+    when(mockResponse.body()).thenReturn(body);
     when(httpClientHandler.sendRequest(fileNames, activeRules)).thenReturn(mockResponse);
-
-    return mockResponse;
   }
 }
