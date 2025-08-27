@@ -30,6 +30,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.TextRange;
 import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
@@ -39,6 +41,7 @@ import org.sonar.api.batch.sensor.internal.DefaultSensorDescriptor;
 import org.sonar.api.batch.sensor.internal.SensorContextTester;
 import org.sonar.api.batch.sensor.issue.Issue;
 import org.sonar.api.batch.sensor.issue.IssueLocation;
+import org.sonar.api.config.internal.MapSettings;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.testfixtures.log.LogTesterJUnit5;
 import org.sonarsource.sonarlint.visualstudio.roslyn.http.HttpAnalysisRequestHandler;
@@ -102,34 +105,40 @@ class SqvsRoslynSensorTests {
     verifyNoInteractions(analysisRequestHandler);
   }
 
-  @Test
-  void analyzeCsFile_callsHttpRequestWithCorrectParameters() throws Exception {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void analyzeCsFile_callsHttpRequestWithCorrectParameters(boolean expectedShouldUseCsharpEnterprise) throws Exception {
     var fileName = "Foo.cs";
     mockInputFile(sensorContext, fileName, "Console.WriteLine(\"Hello World!\");");
     sensorContext.setActiveRules(new ActiveRulesBuilder()
       .addRule(new NewActiveRule.Builder().setRuleKey(RuleKey.of("foo", "bar")).build())
       .addRule(new NewActiveRule.Builder().setRuleKey(RuleKey.of(CSharpLanguage.REPOSITORY_KEY, "S123")).build())
       .build());
+    mockSettings(SqvsRoslynPluginPropertyDefinitions.getShouldUseCsharpEnterprise(), String.valueOf(expectedShouldUseCsharpEnterprise));
 
     underTest.execute(sensorContext);
 
     verify(analysisRequestHandler).analyze(argThat(fileNames -> fileNames.stream().anyMatch(file -> file.contains(fileName))),
-      argThat(activeRules -> activeRules.size() == 1 && activeRules.stream().findFirst().get().ruleKey().rule().equals("S123")));
+      argThat(activeRules -> activeRules.size() == 1 && activeRules.stream().findFirst().get().ruleKey().rule().equals("S123")),
+      argThat(x -> x.isShouldUseCsharpEnterprise() == expectedShouldUseCsharpEnterprise && !x.isShouldUseVbEnterprise()));
   }
 
-  @Test
-  void analyzeVbNetFile_callsHttpRequestWithCorrectParameters() throws Exception {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void analyzeVbNetFile_callsHttpRequestWithCorrectParameters(boolean expectedShouldUseVbEnterprise) throws Exception {
     var fileName = "Foo.vb";
     mockInputFile(sensorContext, fileName, "Console.WriteLine(\"Hello World!\");");
     sensorContext.setActiveRules(new ActiveRulesBuilder()
       .addRule(new NewActiveRule.Builder().setRuleKey(RuleKey.of("foo", "bar")).build())
       .addRule(new NewActiveRule.Builder().setRuleKey(RuleKey.of(VbNetLanguage.REPOSITORY_KEY, "S456")).build())
       .build());
+    mockSettings(SqvsRoslynPluginPropertyDefinitions.getShouldUseVbEnterprise(), String.valueOf(expectedShouldUseVbEnterprise));
 
     underTest.execute(sensorContext);
 
     verify(analysisRequestHandler).analyze(argThat(fileNames -> fileNames.stream().anyMatch(file -> file.contains(fileName))),
-      argThat(activeRules -> activeRules.size() == 1 && activeRules.stream().findFirst().get().ruleKey().rule().equals("S456")));
+      argThat(activeRules -> activeRules.size() == 1 && activeRules.stream().findFirst().get().ruleKey().rule().equals("S456")),
+      argThat(x -> x.isShouldUseVbEnterprise() == expectedShouldUseVbEnterprise && !x.isShouldUseCsharpEnterprise()));
   }
 
   @Test
@@ -140,13 +149,15 @@ class SqvsRoslynSensorTests {
       .addRule(new NewActiveRule.Builder().setRuleKey(RuleKey.of(CSharpLanguage.REPOSITORY_KEY, "S123")).build())
       .addRule(new NewActiveRule.Builder().setRuleKey(RuleKey.of(VbNetLanguage.REPOSITORY_KEY, "S456")).build())
       .build());
+    mockSettings(SqvsRoslynPluginPropertyDefinitions.getShouldUseVbEnterprise(), String.valueOf(true));
 
     underTest.execute(sensorContext);
 
     verify(analysisRequestHandler).analyze(argThat(fileNames -> fileNames.size() == 2 &&
       fileNames.stream().anyMatch(file -> file.contains("foo.cs") || file.contains("boo.vb"))),
       argThat(activeRules -> activeRules.size() == 2 &&
-        activeRules.stream().anyMatch(rule -> rule.ruleKey().rule().equals("S123") || rule.ruleKey().rule().contains("S456"))));
+        activeRules.stream().anyMatch(rule -> rule.ruleKey().rule().equals("S123") || rule.ruleKey().rule().contains("S456"))),
+      argThat(x -> !x.isShouldUseCsharpEnterprise() && x.isShouldUseVbEnterprise()));
   }
 
   @Test
@@ -155,7 +166,9 @@ class SqvsRoslynSensorTests {
     sensorContext.setActiveRules(new ActiveRulesBuilder().addRule(csActiveRule).build());
     when(analysisRequestHandler.analyze(
       argThat(x -> x.stream().anyMatch(file -> file.contains(csFile.filename()))),
-      argThat(x -> x.stream().anyMatch(cs -> cs.ruleKey().rule().contains(csActiveRule.ruleKey().rule()))))).thenReturn(List.of(csharpIssue));
+      argThat(x -> x.stream().anyMatch(cs -> cs.ruleKey().rule().contains(csActiveRule.ruleKey().rule()))),
+      argThat(x -> !x.isShouldUseCsharpEnterprise() && !x.isShouldUseVbEnterprise())))
+        .thenReturn(List.of(csharpIssue));
 
     underTest.execute(sensorContext);
 
@@ -170,7 +183,9 @@ class SqvsRoslynSensorTests {
       .build());
     when(analysisRequestHandler.analyze(
       argThat(x -> x.stream().anyMatch(file -> file.contains(vbFile.filename()))),
-      argThat(x -> x.stream().anyMatch(cs -> cs.ruleKey().rule().contains(vbActiveRule.ruleKey().rule()))))).thenReturn(List.of(vbIssue));
+      argThat(x -> x.stream().anyMatch(cs -> cs.ruleKey().rule().contains(vbActiveRule.ruleKey().rule()))),
+      argThat(x -> !x.isShouldUseCsharpEnterprise() && !x.isShouldUseVbEnterprise())))
+        .thenReturn(List.of(vbIssue));
 
     underTest.execute(sensorContext);
 
@@ -185,7 +200,9 @@ class SqvsRoslynSensorTests {
     var csIssueWithSecondaryLocations = mockRoslynIssueWithSecondaryLocations(csActiveRule.ruleKey().rule(), CSharpLanguage.REPOSITORY_KEY, csFile.filename(), csFile2.filename());
     when(analysisRequestHandler.analyze(
       argThat(x -> x.stream().anyMatch(file -> file.contains(csFile.filename()))),
-      argThat(x -> x.stream().anyMatch(cs -> cs.ruleKey().rule().contains(csActiveRule.ruleKey().rule()))))).thenReturn(List.of(csIssueWithSecondaryLocations));
+      argThat(x -> x.stream().anyMatch(cs -> cs.ruleKey().rule().contains(csActiveRule.ruleKey().rule()))),
+      argThat(x -> !x.isShouldUseCsharpEnterprise() && !x.isShouldUseVbEnterprise())))
+        .thenReturn(List.of(csIssueWithSecondaryLocations));
 
     underTest.execute(sensorContext);
 
@@ -200,7 +217,9 @@ class SqvsRoslynSensorTests {
     var vbIssueWithSecondaryLocations = mockRoslynIssueWithSecondaryLocations(vbActiveRule.ruleKey().rule(), VbNetLanguage.REPOSITORY_KEY, vbFile.filename(), vbFile2.filename());
     when(analysisRequestHandler.analyze(
       argThat(x -> x.stream().anyMatch(file -> file.contains(vbFile.filename()))),
-      argThat(x -> x.stream().anyMatch(cs -> cs.ruleKey().rule().contains(vbActiveRule.ruleKey().rule()))))).thenReturn(List.of(vbIssueWithSecondaryLocations));
+      argThat(x -> x.stream().anyMatch(cs -> cs.ruleKey().rule().contains(vbActiveRule.ruleKey().rule()))),
+      argThat(x -> !x.isShouldUseCsharpEnterprise() && !x.isShouldUseVbEnterprise())))
+        .thenReturn(List.of(vbIssueWithSecondaryLocations));
 
     underTest.execute(sensorContext);
 
@@ -312,5 +331,11 @@ class SqvsRoslynSensorTests {
     assertThat(actualTextRange.start().lineOffset()).isEqualTo(expectedTextRange.getStartLineOffset());
     assertThat(actualTextRange.end().line()).isEqualTo(expectedTextRange.getEndLine());
     assertThat(actualTextRange.end().lineOffset()).isEqualTo(expectedTextRange.getEndLineOffset());
+  }
+
+  private void mockSettings(String key, String value) {
+    var mapSettings = new MapSettings();
+    mapSettings.appendProperty(key, value);
+    sensorContext.setSettings(mapSettings);
   }
 }

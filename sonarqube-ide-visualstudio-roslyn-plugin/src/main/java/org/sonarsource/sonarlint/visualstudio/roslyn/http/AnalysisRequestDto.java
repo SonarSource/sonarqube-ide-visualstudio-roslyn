@@ -30,9 +30,13 @@ public class AnalysisRequestDto {
   @SerializedName("ActiveRules")
   private final Collection<ActiveRuleDto> activeRules;
 
-  public AnalysisRequestDto(Collection<String> fileNames, List<ActiveRuleDto> activeRules) {
+  @SerializedName("AnalyzerInfo")
+  private final AnalyzerInfoDto analyzerInfo;
+
+  public AnalysisRequestDto(Collection<String> fileNames, List<ActiveRuleDto> activeRules, AnalyzerInfoDto analyzerInfo) {
     this.fileNames = fileNames;
     this.activeRules = activeRules;
+    this.analyzerInfo = analyzerInfo;
   }
 
   public Collection<String> getFileNames() {
@@ -41,5 +45,9 @@ public class AnalysisRequestDto {
 
   public Collection<ActiveRuleDto> getActiveRules() {
     return activeRules;
+  }
+
+  public AnalyzerInfoDto getAnalyzerInfo() {
+    return analyzerInfo;
   }
 }

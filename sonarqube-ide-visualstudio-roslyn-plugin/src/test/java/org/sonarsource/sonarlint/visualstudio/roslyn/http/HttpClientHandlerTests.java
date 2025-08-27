@@ -62,16 +62,17 @@ class HttpClientHandlerTests {
   void sendRequest_callsParserWithExpectedParameters() throws IOException, InterruptedException {
     JsonRequestBuilder myMock = mock(JsonRequestBuilder.class);
     Collection<String> fileNames = List.of("File1.cs", "File2.cs");
+    var analyzerInfo = new AnalyzerInfoDto(true, true);
     Collection<ActiveRule> activeRules = List.of(createMockActiveRule("S100"));
     var httpClientHandler = new HttpClientHandler(sensorContext, myMock);
 
     try {
-      httpClientHandler.sendRequest(fileNames, activeRules);
+      httpClientHandler.sendRequest(fileNames, activeRules, analyzerInfo);
     } catch (Exception ex) {
       // expecting request to fail
     }
 
-    verify(myMock).buildBody(fileNames, activeRules);
+    verify(myMock).buildBody(fileNames, activeRules, analyzerInfo);
   }
 
   private ActiveRule createMockActiveRule(String ruleId) {

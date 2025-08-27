@@ -35,6 +35,7 @@ import org.sonar.api.batch.sensor.issue.NewIssueLocation;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
+import org.sonarsource.sonarlint.visualstudio.roslyn.http.AnalyzerInfoDto;
 import org.sonarsource.sonarlint.visualstudio.roslyn.http.HttpAnalysisRequestHandler;
 import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssue;
 import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssueLocation;
@@ -145,7 +146,8 @@ public class SqvsRoslynSensor implements Sensor {
   private void analyze(SensorContext context, FilePredicate predicate) {
     var inputFiles = getFilePaths(context, predicate);
     var activeRules = getActiveRules(context);
-    var roslynIssues = httpRequestHandler.analyze(inputFiles, activeRules);
+    var analyzerInfo = getAnalyzerInfo(context);
+    var roslynIssues = httpRequestHandler.analyze(inputFiles, activeRules, analyzerInfo);
     for (var roslynIssue : roslynIssues) {
       handle(context, roslynIssue);
     }
@@ -164,4 +166,9 @@ public class SqvsRoslynSensor implements Sensor {
     return activeRules;
   }
 
+  private AnalyzerInfoDto getAnalyzerInfo(SensorContext sensorContext) {
+    var shouldUseCsharpEnterprise = sensorContext.config().get(SqvsRoslynPluginPropertyDefinitions.getShouldUseCsharpEnterprise()).map(Boolean::parseBoolean).orElse(false);
+    var shouldUseVbEnterprise = sensorContext.config().get(SqvsRoslynPluginPropertyDefinitions.getShouldUseVbEnterprise()).map(Boolean::parseBoolean).orElse(false);
+    return new AnalyzerInfoDto(shouldUseCsharpEnterprise, shouldUseVbEnterprise);
+  }
 }

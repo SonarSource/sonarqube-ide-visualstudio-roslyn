@@ -42,9 +42,9 @@ public class HttpClientHandler {
     this.jsonRequestBuilder = jsonRequestBuilder;
   }
 
-  public HttpResponse<String> sendRequest(Collection<String> fileNames, Collection<ActiveRule> activeRules) throws IOException, InterruptedException {
+  public HttpResponse<String> sendRequest(Collection<String> fileNames, Collection<ActiveRule> activeRules, AnalyzerInfoDto analyzerInfo) throws IOException, InterruptedException {
     HttpClient client = HttpClient.newHttpClient();
-    var jsonPayload = jsonRequestBuilder.buildBody(fileNames, activeRules);
+    var jsonPayload = jsonRequestBuilder.buildBody(fileNames, activeRules, analyzerInfo);
     var request = createRequest(jsonPayload);
     return client.send(request, HttpResponse.BodyHandlers.ofString());
   }

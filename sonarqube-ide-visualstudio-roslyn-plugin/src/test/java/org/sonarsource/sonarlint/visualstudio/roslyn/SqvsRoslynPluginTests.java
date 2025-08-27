@@ -30,7 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class SqvsRoslynPluginTests {
 
-  private static final int PROPERTY_DEFINITIONS_COUNT = 5;
+  private static final int PROPERTY_DEFINITIONS_COUNT = 6;
   private static final int REGISTERED_CLASSES_COUNT = 6;
 
   @Test

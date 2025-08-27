@@ -32,13 +32,13 @@ import org.sonarsource.api.sonarlint.SonarLintSide;
 public class JsonRequestBuilder {
   private static final Logger LOG = Loggers.get(JsonRequestBuilder.class);
 
-  public String buildBody(Collection<String> fileNames, Collection<ActiveRule> activeRules) {
+  public String buildBody(Collection<String> fileNames, Collection<ActiveRule> activeRules, AnalyzerInfoDto analyzerInfo) {
     var activeRuleDtos = activeRules.stream()
       .map(rule -> new ActiveRuleDto(
         rule.ruleKey().toString(),
         rule.params()))
       .toList();
-    var analysisRequest = new AnalysisRequestDto(fileNames, activeRuleDtos);
+    var analysisRequest = new AnalysisRequestDto(fileNames, activeRuleDtos, analyzerInfo);
 
     return new Gson().toJson(analysisRequest);
   }
