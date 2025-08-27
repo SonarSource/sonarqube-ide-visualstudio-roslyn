@@ -20,57 +20,33 @@
 package org.sonarsource.sonarlint.visualstudio.roslyn.protocol;
 
 import com.google.gson.annotations.SerializedName;
-import javax.annotation.Nullable;
 
-public class DiagnosticLocation {
-
-  @SerializedName("FileName")
-  private String filename;
-
-  @SerializedName("Line")
-  private int line;
-
-  @SerializedName("Column")
-  private int column;
+public class RoslynIssueTextRange {
+  @SerializedName("StartLine")
+  private int startLine;
 
   @SerializedName("EndLine")
   private int endLine;
 
-  @SerializedName("EndColumn")
-  private int endColumn;
+  @SerializedName("StartLineOffset")
+  private int startLineOffset;
 
-  @SerializedName("Text")
-  @Nullable
-  private String text;
+  @SerializedName("EndLineOffset")
+  private int endLineOffset;
 
-  @SerializedName("QuickFixes")
-  private QuickFix[] quickFixes;
-
-  public String getFilename() {
-    return filename;
-  }
-
-  public int getLine() {
-    return line;
+  public int getStartLine() {
+    return startLine;
   }
 
   public int getEndLine() {
     return endLine;
   }
 
-  public int getColumn() {
-    return column;
+  public int getStartLineOffset() {
+    return startLineOffset;
   }
 
-  public int getEndColumn() {
-    return endColumn;
-  }
-
-  public String getText() {
-    return text;
-  }
-
-  public QuickFix[] getQuickFixes() {
-    return quickFixes;
+  public int getEndLineOffset() {
+    return endLineOffset;
   }
 }

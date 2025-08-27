@@ -23,46 +23,52 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import javax.annotation.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.TextRange;
 import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
-import org.sonar.api.batch.rule.Severity;
 import org.sonar.api.batch.rule.internal.ActiveRulesBuilder;
 import org.sonar.api.batch.rule.internal.NewActiveRule;
 import org.sonar.api.batch.sensor.internal.DefaultSensorDescriptor;
 import org.sonar.api.batch.sensor.internal.SensorContextTester;
-import org.sonar.api.batch.sensor.issue.NewIssue;
-import org.sonar.api.batch.sensor.issue.NewIssueLocation;
-import org.sonar.api.batch.sensor.issue.NewMessageFormatting;
-import org.sonar.api.batch.sensor.issue.fix.NewInputFileEdit;
-import org.sonar.api.batch.sensor.issue.fix.NewQuickFix;
-import org.sonar.api.batch.sensor.issue.fix.NewTextEdit;
-import org.sonar.api.issue.impact.SoftwareQuality;
+import org.sonar.api.batch.sensor.issue.Issue;
+import org.sonar.api.batch.sensor.issue.IssueLocation;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.testfixtures.log.LogTesterJUnit5;
 import org.sonarsource.sonarlint.visualstudio.roslyn.http.HttpAnalysisRequestHandler;
+import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssue;
+import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssueFlow;
+import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssueLocation;
+import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssueTextRange;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 class SqvsRoslynSensorTests {
+  private final NewActiveRule csActiveRule = new NewActiveRule.Builder().setRuleKey(RuleKey.of(CSharpLanguage.REPOSITORY_KEY, "S123")).build();
+  private final NewActiveRule vbActiveRule = new NewActiveRule.Builder().setRuleKey(RuleKey.of(VbNetLanguage.REPOSITORY_KEY, "S456")).build();
   @RegisterExtension
   LogTesterJUnit5 logTester = new LogTesterJUnit5();
   private HttpAnalysisRequestHandler analysisRequestHandler;
   private SensorContextTester sensorContext;
   private SqvsRoslynSensor underTest;
   private Path baseDir;
+  private InputFile csFile;
+  private InputFile csFile2;
+  private InputFile vbFile;
+  private InputFile vbFile2;
+  private RoslynIssue csharpIssue;
+  private RoslynIssue vbIssue;
 
   @BeforeEach
   void prepare(@TempDir Path tmp) throws Exception {
@@ -70,6 +76,12 @@ class SqvsRoslynSensorTests {
     baseDir = tmp.toRealPath();
     sensorContext = SensorContextTester.create(baseDir);
     underTest = new SqvsRoslynSensor(analysisRequestHandler);
+    csFile = createInputFile("foo.cs", "var a=1;");
+    csFile2 = createInputFile("foo2.cs", "var b=2;");
+    vbFile = createInputFile("boo.vb", "Dim a As Integer = 1");
+    vbFile2 = createInputFile("boo2.vb", "Dim b As Integer = 2");
+    csharpIssue = mockRoslynIssue("S123", CSharpLanguage.REPOSITORY_KEY, csFile.filename());
+    vbIssue = mockRoslynIssue("S456", VbNetLanguage.REPOSITORY_KEY, vbFile.filename());
   }
 
   @Test
@@ -132,14 +144,71 @@ class SqvsRoslynSensorTests {
     underTest.execute(sensorContext);
 
     verify(analysisRequestHandler).analyze(argThat(fileNames -> fileNames.size() == 2 &&
-        fileNames.stream().anyMatch(file -> file.contains("foo.cs") || file.contains("boo.vb"))),
+      fileNames.stream().anyMatch(file -> file.contains("foo.cs") || file.contains("boo.vb"))),
       argThat(activeRules -> activeRules.size() == 2 &&
         activeRules.stream().anyMatch(rule -> rule.ruleKey().rule().equals("S123") || rule.ruleKey().rule().contains("S456"))));
   }
 
+  @Test
+  void analyzeCs_reportIssueForActiveRules() {
+    sensorContext.fileSystem().add(csFile);
+    sensorContext.setActiveRules(new ActiveRulesBuilder().addRule(csActiveRule).build());
+    when(analysisRequestHandler.analyze(
+      argThat(x -> x.stream().anyMatch(file -> file.contains(csFile.filename()))),
+      argThat(x -> x.stream().anyMatch(cs -> cs.ruleKey().rule().contains(csActiveRule.ruleKey().rule()))))).thenReturn(List.of(csharpIssue));
+
+    underTest.execute(sensorContext);
+
+    verifyExpectedRoslynIssue(csharpIssue);
+  }
+
+  @Test
+  void analyzeVb_reportIssueForActiveRules() {
+    sensorContext.fileSystem().add(vbFile);
+    sensorContext.setActiveRules(new ActiveRulesBuilder()
+      .addRule(vbActiveRule)
+      .build());
+    when(analysisRequestHandler.analyze(
+      argThat(x -> x.stream().anyMatch(file -> file.contains(vbFile.filename()))),
+      argThat(x -> x.stream().anyMatch(cs -> cs.ruleKey().rule().contains(vbActiveRule.ruleKey().rule()))))).thenReturn(List.of(vbIssue));
+
+    underTest.execute(sensorContext);
+
+    verifyExpectedRoslynIssue(vbIssue);
+  }
+
+  @Test
+  void analyzeCs_handleSecondaryLocations() {
+    sensorContext.fileSystem().add(csFile);
+    sensorContext.fileSystem().add(csFile2);
+    sensorContext.setActiveRules(new ActiveRulesBuilder().addRule(csActiveRule).build());
+    var csIssueWithSecondaryLocations = mockRoslynIssueWithSecondaryLocations(csActiveRule.ruleKey().rule(), CSharpLanguage.REPOSITORY_KEY, csFile.filename(), csFile2.filename());
+    when(analysisRequestHandler.analyze(
+      argThat(x -> x.stream().anyMatch(file -> file.contains(csFile.filename()))),
+      argThat(x -> x.stream().anyMatch(cs -> cs.ruleKey().rule().contains(csActiveRule.ruleKey().rule()))))).thenReturn(List.of(csIssueWithSecondaryLocations));
+
+    underTest.execute(sensorContext);
+
+    verifyExpectedRoslynIssue(csIssueWithSecondaryLocations);
+  }
+
+  @Test
+  void analyzeVb_handleSecondaryLocations() {
+    sensorContext.fileSystem().add(vbFile);
+    sensorContext.fileSystem().add(vbFile2);
+    sensorContext.setActiveRules(new ActiveRulesBuilder().addRule(vbActiveRule).build());
+    var vbIssueWithSecondaryLocations = mockRoslynIssueWithSecondaryLocations(vbActiveRule.ruleKey().rule(), VbNetLanguage.REPOSITORY_KEY, vbFile.filename(), vbFile2.filename());
+    when(analysisRequestHandler.analyze(
+      argThat(x -> x.stream().anyMatch(file -> file.contains(vbFile.filename()))),
+      argThat(x -> x.stream().anyMatch(cs -> cs.ruleKey().rule().contains(vbActiveRule.ruleKey().rule()))))).thenReturn(List.of(vbIssueWithSecondaryLocations));
+
+    underTest.execute(sensorContext);
+
+    verifyExpectedRoslynIssue(vbIssueWithSecondaryLocations);
+  }
+
   private void mockInputFiles(SensorContextTester sensorContextTester, String... fileNames) throws IOException {
-    for (var fileName: fileNames)
-    {
+    for (var fileName : fileNames) {
       mockInputFile(sensorContextTester, fileName, "some content");
     }
   }
@@ -157,205 +226,91 @@ class SqvsRoslynSensorTests {
     return TestInputFileBuilder.create("", filePath.toString())
       .setModuleBaseDir(baseDir)
       .setLanguage(languageKey)
+      .initMetadata(content)
       .setCharset(StandardCharsets.UTF_8)
       .build();
   }
 
-  private static class MockSonarLintIssue implements NewIssue {
-    private final List<MockSonarLintQuickFix> quickFixes = new ArrayList<>();
+  private RoslynIssue mockRoslynIssue(String ruleKey, String repository, String filePath) {
+    var roslynIssue = mock(RoslynIssue.class);
+    when(roslynIssue.getRuleId()).thenReturn(repository + ":" + ruleKey);
+    var primaryLocation = mockIssueLocation(filePath);
+    when(roslynIssue.getPrimaryLocation()).thenReturn(primaryLocation);
+    mockTextRange(primaryLocation, 1, 1, 1, 5);
 
-    @Override
-    public NewIssue forRule(RuleKey ruleKey) {
-      return this;
-    }
+    return roslynIssue;
+  }
 
-    @Override
-    public NewIssue gap(@Nullable Double aDouble) {
-      return this;
-    }
+  private void mockTextRange(RoslynIssueLocation issueLocation, int startLine, int endLine, int starLineOffset, int endLineOffset) {
+    var textRange = mock(RoslynIssueTextRange.class);
+    when(textRange.getStartLine()).thenReturn(startLine);
+    when(textRange.getStartLineOffset()).thenReturn(starLineOffset);
+    when(textRange.getEndLine()).thenReturn(endLine);
+    when(textRange.getEndLineOffset()).thenReturn(endLineOffset);
+    when(issueLocation.getTextRange()).thenReturn(textRange);
+  }
 
-    @Override
-    public NewIssue overrideSeverity(@Nullable Severity severity) {
-      return this;
-    }
+  private RoslynIssueLocation mockIssueLocation(String filePath) {
+    var location = mock(RoslynIssueLocation.class);
+    when(location.getFilePath()).thenReturn(filePath);
+    when(location.getMessage()).thenReturn("Don't do this");
+    return location;
+  }
 
-    @Override
-    public NewIssue overrideImpact(SoftwareQuality softwareQuality, org.sonar.api.issue.impact.Severity severity) {
-      return null;
-    }
+  private RoslynIssueFlow mockIssueFlow(RoslynIssueLocation location) {
+    var flow = mock(RoslynIssueFlow.class);
+    when(flow.getLocations()).thenReturn(List.of(location));
 
-    @Override
-    public NewIssue at(NewIssueLocation newIssueLocation) {
-      return this;
-    }
+    return flow;
+  }
 
-    @Override
-    public NewIssue addLocation(NewIssueLocation newIssueLocation) {
-      return this;
-    }
+  private RoslynIssue mockRoslynIssueWithSecondaryLocations(String ruleKey, String repository, String filePath, String filePath2) {
+    var roslynIssue = mockRoslynIssue(ruleKey, repository, filePath);
 
-    @Override
-    public NewIssue setQuickFixAvailable(boolean b) {
-      return this;
-    }
+    var secondaryLocation = mockIssueLocation(filePath);
+    mockTextRange(secondaryLocation, 1, 1, 2, 4);
 
-    @Override
-    public NewIssue addFlow(Iterable<NewIssueLocation> iterable) {
-      return this;
-    }
+    var secondaryLocationOnAnotherFile = mockIssueLocation(filePath2);
+    mockTextRange(secondaryLocationOnAnotherFile, 1, 1, 3, 6);
 
-    @Override
-    public NewIssue addFlow(Iterable<NewIssueLocation> iterable, NewIssue.FlowType flowType, @Nullable String s) {
-      return this;
-    }
+    var flows = List.of(mockIssueFlow(secondaryLocation), mockIssueFlow(secondaryLocationOnAnotherFile));
+    when(roslynIssue.getFlows()).thenReturn(flows);
 
-    @Override
-    public NewIssueLocation newLocation() {
-      return new MockIssueLocation();
-    }
+    return roslynIssue;
+  }
 
-    @Override
-    public void save() {
-      // no op
-    }
-
-    @Override
-    public NewIssue setRuleDescriptionContextKey(@Nullable String s) {
-      return this;
-    }
-
-    @Override
-    public NewIssue setCodeVariants(@Nullable Iterable<String> iterable) {
-      return null;
-    }
-
-    @Override
-    public MockSonarLintQuickFix newQuickFix() {
-      return new MockSonarLintQuickFix();
-    }
-
-    @Override
-    public NewIssue addQuickFix(org.sonar.api.batch.sensor.issue.fix.NewQuickFix newQuickFix) {
-      quickFixes.add((MockSonarLintQuickFix) newQuickFix);
-      return this;
-    }
-
-    public List<MockSonarLintQuickFix> getQuickFixes() {
-      return quickFixes;
-    }
-
-    private static class MockSonarLintQuickFix implements NewQuickFix {
-      private final List<MockSonarLintInputFileEdit> inputFileEdits = new ArrayList<>();
-      private String message;
-
-      @Override
-      public NewQuickFix message(String message) {
-        this.message = message;
-        return this;
-      }
-
-      @Override
-      public NewInputFileEdit newInputFileEdit() {
-        return new MockSonarLintInputFileEdit();
-      }
-
-      @Override
-      public NewQuickFix addInputFileEdit(NewInputFileEdit newInputFileEdit) {
-        inputFileEdits.add((MockSonarLintInputFileEdit) newInputFileEdit);
-        return this;
-      }
-
-      public String getMessage() {
-        return message;
-      }
-
-      public List<MockSonarLintInputFileEdit> getInputFileEdits() {
-        return inputFileEdits;
-      }
-
-      private static class MockSonarLintInputFileEdit implements NewInputFileEdit {
-        private final List<MockSonarLintTextEdit> textEdits = new ArrayList<>();
-        private InputFile inputFile;
-
-        @Override
-        public NewInputFileEdit on(InputFile inputFile) {
-          this.inputFile = inputFile;
-          return this;
-        }
-
-        @Override
-        public NewTextEdit newTextEdit() {
-          return new MockSonarLintTextEdit();
-        }
-
-        @Override
-        public NewInputFileEdit addTextEdit(NewTextEdit newTextEdit) {
-          textEdits.add((MockSonarLintTextEdit) newTextEdit);
-          return this;
-        }
-
-        public InputFile getInputFile() {
-          return inputFile;
-        }
-
-        public List<MockSonarLintTextEdit> getTextEdits() {
-          return textEdits;
-        }
-
-        private static class MockSonarLintTextEdit implements NewTextEdit {
-          private TextRange textRange;
-          private String newText;
-
-          @Override
-          public NewTextEdit at(TextRange textRange) {
-            this.textRange = textRange;
-            return this;
-          }
-
-          @Override
-          public NewTextEdit withNewText(String newText) {
-            this.newText = newText;
-            return this;
-          }
-
-          public TextRange getTextRange() {
-            return textRange;
-          }
-
-          public String getNewText() {
-            return newText;
-          }
-        }
-      }
+  private void verifyExpectedRoslynIssue(RoslynIssue... roslynIssues) {
+    var actualIssues = sensorContext.allIssues();
+    assertThat(roslynIssues).hasSize(actualIssues.size());
+    for (var actualIssue : actualIssues) {
+      var expectedIssue = Arrays.stream(roslynIssues).filter(x -> x.getRuleId().equals(actualIssue.ruleKey().toString())).findFirst().orElse(null);
+      assertThat(expectedIssue).isNotNull();
+      verifyExpectedLocation(expectedIssue.getPrimaryLocation(), actualIssue.primaryLocation());
+      verifyExpectedSecondaryLocations(expectedIssue, actualIssue);
     }
   }
 
-  private static class MockIssueLocation implements NewIssueLocation {
-
-    @Override
-    public NewIssueLocation on(InputComponent inputComponent) {
-      return this;
-    }
-
-    @Override
-    public NewIssueLocation at(TextRange textRange) {
-      return this;
-    }
-
-    @Override
-    public NewIssueLocation message(String s) {
-      return this;
-    }
-
-    @Override
-    public NewIssueLocation message(String message, List<NewMessageFormatting> newMessageFormatting) {
-      return this;
-    }
-
-    @Override
-    public NewMessageFormatting newMessageFormatting() {
-      throw new UnsupportedOperationException();
+  private void verifyExpectedSecondaryLocations(RoslynIssue expectedIssue, Issue actualIssue) {
+    assertThat(expectedIssue.getFlows()).hasSize(actualIssue.flows().size());
+    var actualLocations = actualIssue.flows().stream().flatMap(x -> x.locations().stream()).toList();
+    var expectedLocations = expectedIssue.getFlows().stream().flatMap(x -> x.getLocations().stream()).toList();
+    for (var location : actualLocations) {
+      var expectedLocation = expectedLocations.stream().filter(x -> x.getFilePath().equals(location.inputComponent().toString())).findFirst().orElse(null);
+      verifyExpectedLocation(expectedLocation, location);
     }
   }
 
+  private void verifyExpectedLocation(@Nullable RoslynIssueLocation expectedIssueLocation, IssueLocation actualIssueLocation) {
+    assertThat(expectedIssueLocation).isNotNull();
+    assertThat(actualIssueLocation.inputComponent().toString()).hasToString(expectedIssueLocation.getFilePath());
+    assertThat(actualIssueLocation.message()).isEqualTo(expectedIssueLocation.getMessage());
+    verifyExpectedTextRange(actualIssueLocation.textRange(), expectedIssueLocation.getTextRange());
+  }
+
+  private void verifyExpectedTextRange(TextRange actualTextRange, RoslynIssueTextRange expectedTextRange) {
+    assertThat(actualTextRange.start().line()).isEqualTo(expectedTextRange.getStartLine());
+    assertThat(actualTextRange.start().lineOffset()).isEqualTo(expectedTextRange.getStartLineOffset());
+    assertThat(actualTextRange.end().line()).isEqualTo(expectedTextRange.getEndLine());
+    assertThat(actualTextRange.end().lineOffset()).isEqualTo(expectedTextRange.getEndLineOffset());
+  }
 }

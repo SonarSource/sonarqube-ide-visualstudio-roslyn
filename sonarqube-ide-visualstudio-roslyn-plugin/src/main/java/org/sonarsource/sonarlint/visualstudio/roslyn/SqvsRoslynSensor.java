@@ -36,11 +36,8 @@ import org.sonar.api.rule.RuleKey;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.visualstudio.roslyn.http.HttpAnalysisRequestHandler;
-import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.Diagnostic;
-import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.DiagnosticLocation;
-import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.Fix;
-import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.QuickFix;
-import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.QuickFixEdit;
+import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssue;
+import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssueLocation;
 
 public class SqvsRoslynSensor implements Sensor {
 
@@ -51,61 +48,33 @@ public class SqvsRoslynSensor implements Sensor {
     this.httpRequestHandler = httpRequestHandler;
   }
 
-  private static void handle(SensorContext context, Diagnostic diag) {
-    var ruleKey = RuleKey.of(CSharpLanguage.REPOSITORY_KEY, diag.getId());
+  private static void handle(SensorContext context, RoslynIssue roslynIssue) {
+    var parts = roslynIssue.getRuleId().split(":");
+    var ruleKey = RuleKey.of(parts[0], parts[1]);
     if (context.activeRules().find(ruleKey) != null) {
-      var diagFilePath = Paths.get(diag.getFilename());
+      var diagFilePath = Paths.get(roslynIssue.getPrimaryLocation().getFilePath());
       var diagInputFile = findInputFile(context, diagFilePath);
       if (diagInputFile != null) {
         var newIssue = context.newIssue();
         newIssue
           .forRule(ruleKey)
-          .at(createLocation(newIssue, diag, diagInputFile));
-        handleSecondaryLocations(context, diag, newIssue);
-        handleQuickFixes(context, diag, newIssue);
+          .at(createLocation(newIssue, roslynIssue.getPrimaryLocation(), diagInputFile));
+        handleSecondaryLocations(context, roslynIssue, newIssue);
+        // TODO by https://sonarsource.atlassian.net/browse/SLVS-2492 handle quickfixes once they are returned from the server
+        /* handleQuickFixes(context, roslynIssue, newIssue); */
         newIssue.save();
       }
     }
   }
 
-  private static void handleQuickFixes(SensorContext context, Diagnostic diag, NewIssue newIssue) {
-    var quickFixes = diag.getQuickFixes();
-    if (quickFixes != null && quickFixes.length > 0) {
-      newIssue.setQuickFixAvailable(true);
-      for (var quickFix : quickFixes) {
-        handleQuickFix(context, quickFix, newIssue);
-      }
-    }
-  }
-
-  static void handleQuickFix(SensorContext context, QuickFix quickFix, NewIssue newIssue) {
-    var newQuickFix = newIssue.newQuickFix();
-    newQuickFix.message(quickFix.getMessage());
-    for (Fix fix : quickFix.getFixes()) {
-      var fixInputFile = findInputFile(context, Paths.get(fix.getFilename()));
-      if (fixInputFile != null) {
-        var newInputFileEdit = newQuickFix.newInputFileEdit()
-          .on(fixInputFile);
-        for (QuickFixEdit edit : fix.getEdits()) {
-          var newTextEdit = newInputFileEdit.newTextEdit()
-            .at(fixInputFile.newRange(edit.getStartLine(), edit.getStartColumn() - 1, edit.getEndLine(), edit.getEndColumn() - 1))
-            .withNewText(edit.getNewText());
-          newInputFileEdit.addTextEdit(newTextEdit);
-        }
-        newQuickFix.addInputFileEdit(newInputFileEdit);
-      }
-    }
-    newIssue.addQuickFix(newQuickFix);
-  }
-
-  private static void handleSecondaryLocations(SensorContext context, Diagnostic diag, NewIssue newIssue) {
-    var additionalLocations = diag.getAdditionalLocations();
-    if (additionalLocations != null) {
-      for (var additionalLocation : additionalLocations) {
-        var additionalFilePath = Paths.get(additionalLocation.getFilename());
-        var additionalFilePathInputFile = findInputFile(context, additionalFilePath);
-        if (additionalFilePathInputFile != null) {
-          newIssue.addLocation(createLocation(newIssue, additionalLocation, additionalFilePathInputFile));
+  private static void handleSecondaryLocations(SensorContext context, RoslynIssue diag, NewIssue newIssue) {
+    var flows = diag.getFlows();
+    for (var flow : flows) {
+      for (var flowLocation : flow.getLocations()) {
+        var filePath = Paths.get(flowLocation.getFilePath());
+        var inputFile = findInputFile(context, filePath);
+        if (inputFile != null) {
+          newIssue.addLocation(createLocation(newIssue, flowLocation, inputFile));
         }
       }
     }
@@ -115,11 +84,12 @@ public class SqvsRoslynSensor implements Sensor {
     return context.fileSystem().inputFile(context.fileSystem().predicates().is(filePath.toFile()));
   }
 
-  private static NewIssueLocation createLocation(NewIssue newIssue, DiagnosticLocation location, InputFile inputFile) {
+  private static NewIssueLocation createLocation(NewIssue newIssue, RoslynIssueLocation location, InputFile inputFile) {
     return newIssue.newLocation()
       .on(inputFile)
-      .at(inputFile.newRange(location.getLine(), location.getColumn() - 1, location.getEndLine(), location.getEndColumn() - 1))
-      .message(location.getText());
+      .at(inputFile.newRange(location.getTextRange().getStartLine(), location.getTextRange().getStartLineOffset(), location.getTextRange().getEndLine(),
+        location.getTextRange().getEndLineOffset()))
+      .message(location.getMessage());
   }
 
   @Override
@@ -139,12 +109,46 @@ public class SqvsRoslynSensor implements Sensor {
     analyze(context, predicate);
   }
 
+  // TODO by https://sonarsource.atlassian.net/browse/SLVS-2492 handle quickfixes once they are returned from the server
+  /*
+   * private static void handleQuickFixes(SensorContext context, RoslynIssue diag, NewIssue newIssue) {
+   * var quickFixes = diag.getQuickFixes();
+   * if (quickFixes != null && quickFixes.length > 0) {
+   * newIssue.setQuickFixAvailable(true);
+   * for (var quickFix : quickFixes) {
+   * handleQuickFix(context, quickFix, newIssue);
+   * }
+   * }
+   * }
+   *
+   * static void handleQuickFix(SensorContext context, QuickFix quickFix, NewIssue newIssue) {
+   * var newQuickFix = newIssue.newQuickFix();
+   * newQuickFix.message(quickFix.getMessage());
+   * for (Fix fix : quickFix.getFixes()) {
+   * var fixInputFile = findInputFile(context, Paths.get(fix.getFilename()));
+   * if (fixInputFile != null) {
+   * var newInputFileEdit = newQuickFix.newInputFileEdit()
+   * .on(fixInputFile);
+   * for (QuickFixEdit edit : fix.getEdits()) {
+   * var newTextEdit = newInputFileEdit.newTextEdit()
+   * .at(fixInputFile.newRange(edit.getStartLine(), edit.getStartColumn() - 1, edit.getEndLine(), edit.getEndColumn() - 1))
+   * .withNewText(edit.getNewText());
+   * newInputFileEdit.addTextEdit(newTextEdit);
+   * }
+   * newQuickFix.addInputFileEdit(newInputFileEdit);
+   * }
+   * }
+   * newIssue.addQuickFix(newQuickFix);
+   * }
+   */
+
   private void analyze(SensorContext context, FilePredicate predicate) {
     var inputFiles = getFilePaths(context, predicate);
     var activeRules = getActiveRules(context);
-    httpRequestHandler.analyze(inputFiles, activeRules);
-    // TODO by https://sonarsource.atlassian.net/browse/SLVS-2426 send analysis results to SlCore
-    // handle(context, diagnostic);
+    var roslynIssues = httpRequestHandler.analyze(inputFiles, activeRules);
+    for (var roslynIssue : roslynIssues) {
+      handle(context, roslynIssue);
+    }
   }
 
   private Collection<String> getFilePaths(SensorContext context, FilePredicate predicate) {

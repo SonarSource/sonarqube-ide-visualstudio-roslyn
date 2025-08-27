@@ -17,16 +17,30 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.visualstudio.roslyn;
+package org.sonarsource.sonarlint.visualstudio.roslyn.protocol;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import com.google.gson.annotations.SerializedName;
+import java.util.List;
 
-class OmnisharpTestUtils {
+public class RoslynIssue {
+  @SerializedName("RuleId")
+  private String ruleId;
 
-  private OmnisharpTestUtils() {
-    // NOP
+  @SerializedName("PrimaryLocation")
+  private RoslynIssueLocation primaryLocation;
+
+  @SerializedName("Flows")
+  private List<RoslynIssueFlow> flows;
+
+  public String getRuleId() {
+    return ruleId;
   }
 
-  static final Path ANALYZER_JAR = Paths.get("target/analyzer").resolve("sonarcsharp.jar").toAbsolutePath();
+  public RoslynIssueLocation getPrimaryLocation() {
+    return primaryLocation;
+  }
+
+  public List<RoslynIssueFlow> getFlows() {
+    return flows;
+  }
 }
