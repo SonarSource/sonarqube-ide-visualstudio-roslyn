@@ -19,29 +19,24 @@
  */
 package org.sonarsource.sonarlint.visualstudio.roslyn;
 
-import java.util.List;
-import org.junit.jupiter.api.Test;
-import org.sonar.api.Plugin;
-import org.sonar.api.SonarRuntime;
-import org.sonar.api.internal.SonarRuntimeImpl;
-import org.sonar.api.utils.Version;
+import org.sonar.api.config.Configuration;
+import org.sonarsource.api.sonarlint.SonarLintSide;
 
-import static org.assertj.core.api.Assertions.assertThat;
+@SonarLintSide(lifespan = SonarLintSide.INSTANCE)
+public class InstanceConfigurationProvider {
+  private final Boolean shouldUseCsharpEnterprise;
+  private final Boolean shouldUseVbEnterprise;
 
-class SqvsRoslynPluginTests {
-
-  private static final int PROPERTY_DEFINITIONS_COUNT = 6;
-  private static final int REGISTERED_CLASSES_COUNT = 7;
-
-  @Test
-  void getExtensions() {
-    SonarRuntime sonarRuntime = SonarRuntimeImpl.forSonarLint(Version.create(7, 9));
-    Plugin.Context context = new Plugin.Context(sonarRuntime);
-    new SqvsRoslynPlugin().define(context);
-
-    List<?> extensions = context.getExtensions();
-
-    assertThat(extensions).hasSize(PROPERTY_DEFINITIONS_COUNT + REGISTERED_CLASSES_COUNT);
+  public InstanceConfigurationProvider(Configuration configuration) {
+    shouldUseCsharpEnterprise = configuration.get(SqvsRoslynPluginPropertyDefinitions.getShouldUseCsharpEnterprise()).map(Boolean::parseBoolean).orElse(false);
+    shouldUseVbEnterprise = configuration.get(SqvsRoslynPluginPropertyDefinitions.getShouldUseVbEnterprise()).map(Boolean::parseBoolean).orElse(false);
   }
 
+  public Boolean getShouldUseCsharpEnterprise() {
+    return shouldUseCsharpEnterprise;
+  }
+
+  public Boolean getShouldUseVbEnterprise() {
+    return shouldUseVbEnterprise;
+  }
 }

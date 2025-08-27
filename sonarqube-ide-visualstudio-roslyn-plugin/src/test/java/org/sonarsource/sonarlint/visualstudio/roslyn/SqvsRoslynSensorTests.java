@@ -41,7 +41,6 @@ import org.sonar.api.batch.sensor.internal.DefaultSensorDescriptor;
 import org.sonar.api.batch.sensor.internal.SensorContextTester;
 import org.sonar.api.batch.sensor.issue.Issue;
 import org.sonar.api.batch.sensor.issue.IssueLocation;
-import org.sonar.api.config.internal.MapSettings;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.testfixtures.log.LogTesterJUnit5;
 import org.sonarsource.sonarlint.visualstudio.roslyn.http.HttpAnalysisRequestHandler;
@@ -63,6 +62,7 @@ class SqvsRoslynSensorTests {
   @RegisterExtension
   LogTesterJUnit5 logTester = new LogTesterJUnit5();
   private HttpAnalysisRequestHandler analysisRequestHandler;
+  private InstanceConfigurationProvider instanceConfigurationProvider;
   private SensorContextTester sensorContext;
   private SqvsRoslynSensor underTest;
   private Path baseDir;
@@ -76,9 +76,10 @@ class SqvsRoslynSensorTests {
   @BeforeEach
   void prepare(@TempDir Path tmp) throws Exception {
     analysisRequestHandler = mock(HttpAnalysisRequestHandler.class);
+    instanceConfigurationProvider = mock(InstanceConfigurationProvider.class);
     baseDir = tmp.toRealPath();
     sensorContext = SensorContextTester.create(baseDir);
-    underTest = new SqvsRoslynSensor(analysisRequestHandler);
+    underTest = new SqvsRoslynSensor(analysisRequestHandler, instanceConfigurationProvider);
     csFile = createInputFile("foo.cs", "var a=1;");
     csFile2 = createInputFile("foo2.cs", "var b=2;");
     vbFile = createInputFile("boo.vb", "Dim a As Integer = 1");
@@ -114,7 +115,7 @@ class SqvsRoslynSensorTests {
       .addRule(new NewActiveRule.Builder().setRuleKey(RuleKey.of("foo", "bar")).build())
       .addRule(new NewActiveRule.Builder().setRuleKey(RuleKey.of(CSharpLanguage.REPOSITORY_KEY, "S123")).build())
       .build());
-    mockSettings(SqvsRoslynPluginPropertyDefinitions.getShouldUseCsharpEnterprise(), String.valueOf(expectedShouldUseCsharpEnterprise));
+    mockSettings(expectedShouldUseCsharpEnterprise, false);
 
     underTest.execute(sensorContext);
 
@@ -132,7 +133,7 @@ class SqvsRoslynSensorTests {
       .addRule(new NewActiveRule.Builder().setRuleKey(RuleKey.of("foo", "bar")).build())
       .addRule(new NewActiveRule.Builder().setRuleKey(RuleKey.of(VbNetLanguage.REPOSITORY_KEY, "S456")).build())
       .build());
-    mockSettings(SqvsRoslynPluginPropertyDefinitions.getShouldUseVbEnterprise(), String.valueOf(expectedShouldUseVbEnterprise));
+    mockSettings(false, expectedShouldUseVbEnterprise);
 
     underTest.execute(sensorContext);
 
@@ -149,7 +150,7 @@ class SqvsRoslynSensorTests {
       .addRule(new NewActiveRule.Builder().setRuleKey(RuleKey.of(CSharpLanguage.REPOSITORY_KEY, "S123")).build())
       .addRule(new NewActiveRule.Builder().setRuleKey(RuleKey.of(VbNetLanguage.REPOSITORY_KEY, "S456")).build())
       .build());
-    mockSettings(SqvsRoslynPluginPropertyDefinitions.getShouldUseVbEnterprise(), String.valueOf(true));
+    mockSettings(true, true);
 
     underTest.execute(sensorContext);
 
@@ -157,7 +158,7 @@ class SqvsRoslynSensorTests {
       fileNames.stream().anyMatch(file -> file.contains("foo.cs") || file.contains("boo.vb"))),
       argThat(activeRules -> activeRules.size() == 2 &&
         activeRules.stream().anyMatch(rule -> rule.ruleKey().rule().equals("S123") || rule.ruleKey().rule().contains("S456"))),
-      argThat(x -> !x.isShouldUseCsharpEnterprise() && x.isShouldUseVbEnterprise()));
+      argThat(x -> x.isShouldUseCsharpEnterprise() && x.isShouldUseVbEnterprise()));
   }
 
   @Test
@@ -333,9 +334,8 @@ class SqvsRoslynSensorTests {
     assertThat(actualTextRange.end().lineOffset()).isEqualTo(expectedTextRange.getEndLineOffset());
   }
 
-  private void mockSettings(String key, String value) {
-    var mapSettings = new MapSettings();
-    mapSettings.appendProperty(key, value);
-    sensorContext.setSettings(mapSettings);
+  private void mockSettings(boolean shouldUseCsharpEnterprise, boolean shouldUseVbnetEnterprise) {
+    when(instanceConfigurationProvider.getShouldUseCsharpEnterprise()).thenReturn(shouldUseCsharpEnterprise);
+    when(instanceConfigurationProvider.getShouldUseVbEnterprise()).thenReturn(shouldUseVbnetEnterprise);
   }
 }

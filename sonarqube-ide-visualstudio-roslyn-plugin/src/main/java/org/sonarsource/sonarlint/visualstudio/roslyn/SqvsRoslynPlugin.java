@@ -34,6 +34,7 @@ public class SqvsRoslynPlugin implements Plugin {
         SqvsRoslynSensor.class,
         JsonRequestBuilder.class,
         HttpClientHandler.class,
+        InstanceConfigurationProvider.class,
         HttpAnalysisRequestHandler.class);
     }
 
