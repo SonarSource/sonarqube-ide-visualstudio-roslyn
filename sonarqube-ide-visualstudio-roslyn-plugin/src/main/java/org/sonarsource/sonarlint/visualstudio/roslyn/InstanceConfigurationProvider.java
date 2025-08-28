@@ -24,8 +24,8 @@ import org.sonarsource.api.sonarlint.SonarLintSide;
 
 @SonarLintSide(lifespan = SonarLintSide.INSTANCE)
 public class InstanceConfigurationProvider {
-  private final Boolean shouldUseCsharpEnterprise;
-  private final Boolean shouldUseVbEnterprise;
+  private final boolean shouldUseCsharpEnterprise;
+  private final boolean shouldUseVbEnterprise;
 
   public InstanceConfigurationProvider(Configuration configuration) {
     shouldUseCsharpEnterprise = configuration.get(SqvsRoslynPluginPropertyDefinitions.getShouldUseCsharpEnterprise()).map(Boolean::parseBoolean).orElse(false);
