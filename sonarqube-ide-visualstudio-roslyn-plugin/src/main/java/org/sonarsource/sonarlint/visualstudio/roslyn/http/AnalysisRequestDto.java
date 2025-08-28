@@ -21,33 +21,8 @@ package org.sonarsource.sonarlint.visualstudio.roslyn.http;
 
 import com.google.gson.annotations.SerializedName;
 import java.util.Collection;
-import java.util.List;
 
-public class AnalysisRequestDto {
-  @SerializedName("FileNames")
-  private final Collection<String> fileNames;
+public record AnalysisRequestDto(@SerializedName("FileNames") Collection<String> fileNames, @SerializedName("ActiveRules") Collection<ActiveRuleDto> activeRules,
+  @SerializedName("AnalyzerInfo") AnalyzerInfoDto analyzerInfo) {
 
-  @SerializedName("ActiveRules")
-  private final Collection<ActiveRuleDto> activeRules;
-
-  @SerializedName("AnalyzerInfo")
-  private final AnalyzerInfoDto analyzerInfo;
-
-  public AnalysisRequestDto(Collection<String> fileNames, List<ActiveRuleDto> activeRules, AnalyzerInfoDto analyzerInfo) {
-    this.fileNames = fileNames;
-    this.activeRules = activeRules;
-    this.analyzerInfo = analyzerInfo;
-  }
-
-  public Collection<String> getFileNames() {
-    return fileNames;
-  }
-
-  public Collection<ActiveRuleDto> getActiveRules() {
-    return activeRules;
-  }
-
-  public AnalyzerInfoDto getAnalyzerInfo() {
-    return analyzerInfo;
-  }
 }

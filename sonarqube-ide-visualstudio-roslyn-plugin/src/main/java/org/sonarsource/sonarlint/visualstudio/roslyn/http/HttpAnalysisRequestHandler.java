@@ -55,7 +55,7 @@ public class HttpAnalysisRequestHandler {
         return roslynIssues;
       }
 
-      roslynIssues = responseDto.getRoslynIssues();
+      roslynIssues = responseDto.roslynIssues();
     } catch (InterruptedException e) {
       LOG.debug("Interrupted!", e);
       Thread.currentThread().interrupt();

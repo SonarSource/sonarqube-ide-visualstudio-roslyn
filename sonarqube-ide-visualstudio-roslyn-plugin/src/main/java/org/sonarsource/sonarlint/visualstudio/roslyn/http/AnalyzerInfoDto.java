@@ -21,23 +21,6 @@ package org.sonarsource.sonarlint.visualstudio.roslyn.http;
 
 import com.google.gson.annotations.SerializedName;
 
-public class AnalyzerInfoDto {
-  @SerializedName("ShouldUseCsharpEnterprise")
-  private final boolean shouldUseCsharpEnterprise;
-
-  @SerializedName("ShouldUseVbEnterprise")
-  private final boolean shouldUseVbEnterprise;
-
-  public AnalyzerInfoDto(boolean shouldUseCsharpEnterprise, boolean shouldUseVbEnterprise) {
-    this.shouldUseCsharpEnterprise = shouldUseCsharpEnterprise;
-    this.shouldUseVbEnterprise = shouldUseVbEnterprise;
-  }
-
-  public boolean isShouldUseVbEnterprise() {
-    return shouldUseVbEnterprise;
-  }
-
-  public boolean isShouldUseCsharpEnterprise() {
-    return shouldUseCsharpEnterprise;
-  }
+public record AnalyzerInfoDto(@SerializedName("ShouldUseCsharpEnterprise") boolean shouldUseCsharpEnterprise,
+  @SerializedName("ShouldUseVbEnterprise") boolean shouldUseVbEnterprise) {
 }

@@ -23,11 +23,5 @@ import com.google.gson.annotations.SerializedName;
 import java.util.List;
 import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssue;
 
-public class AnalysisResponseDto {
-  @SerializedName("RoslynIssues")
-  private List<RoslynIssue> roslynIssues;
-
-  public List<RoslynIssue> getRoslynIssues() {
-    return roslynIssues;
-  }
+public record AnalysisResponseDto(@SerializedName("RoslynIssues") List<RoslynIssue> roslynIssues) {
 }

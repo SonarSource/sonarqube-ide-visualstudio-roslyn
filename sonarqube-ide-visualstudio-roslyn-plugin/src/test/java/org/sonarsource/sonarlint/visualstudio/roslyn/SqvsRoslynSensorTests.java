@@ -121,7 +121,7 @@ class SqvsRoslynSensorTests {
 
     verify(analysisRequestHandler).analyze(argThat(fileNames -> fileNames.stream().anyMatch(file -> file.contains(fileName))),
       argThat(activeRules -> activeRules.size() == 1 && activeRules.stream().findFirst().get().ruleKey().rule().equals("S123")),
-      argThat(x -> x.isShouldUseCsharpEnterprise() == expectedShouldUseCsharpEnterprise && !x.isShouldUseVbEnterprise()));
+      argThat(x -> x.shouldUseCsharpEnterprise() == expectedShouldUseCsharpEnterprise && !x.shouldUseVbEnterprise()));
   }
 
   @ParameterizedTest
@@ -139,7 +139,7 @@ class SqvsRoslynSensorTests {
 
     verify(analysisRequestHandler).analyze(argThat(fileNames -> fileNames.stream().anyMatch(file -> file.contains(fileName))),
       argThat(activeRules -> activeRules.size() == 1 && activeRules.stream().findFirst().get().ruleKey().rule().equals("S456")),
-      argThat(x -> x.isShouldUseVbEnterprise() == expectedShouldUseVbEnterprise && !x.isShouldUseCsharpEnterprise()));
+      argThat(x -> x.shouldUseVbEnterprise() == expectedShouldUseVbEnterprise && !x.shouldUseCsharpEnterprise()));
   }
 
   @Test
@@ -158,7 +158,7 @@ class SqvsRoslynSensorTests {
       fileNames.stream().anyMatch(file -> file.contains("foo.cs") || file.contains("boo.vb"))),
       argThat(activeRules -> activeRules.size() == 2 &&
         activeRules.stream().anyMatch(rule -> rule.ruleKey().rule().equals("S123") || rule.ruleKey().rule().contains("S456"))),
-      argThat(x -> x.isShouldUseCsharpEnterprise() && x.isShouldUseVbEnterprise()));
+      argThat(x -> x.shouldUseCsharpEnterprise() && x.shouldUseVbEnterprise()));
   }
 
   @Test
@@ -168,7 +168,7 @@ class SqvsRoslynSensorTests {
     when(analysisRequestHandler.analyze(
       argThat(x -> x.stream().anyMatch(file -> file.contains(csFile.filename()))),
       argThat(x -> x.stream().anyMatch(cs -> cs.ruleKey().rule().contains(csActiveRule.ruleKey().rule()))),
-      argThat(x -> !x.isShouldUseCsharpEnterprise() && !x.isShouldUseVbEnterprise())))
+      argThat(x -> !x.shouldUseCsharpEnterprise() && !x.shouldUseVbEnterprise())))
         .thenReturn(List.of(csharpIssue));
 
     underTest.execute(sensorContext);
@@ -185,7 +185,7 @@ class SqvsRoslynSensorTests {
     when(analysisRequestHandler.analyze(
       argThat(x -> x.stream().anyMatch(file -> file.contains(vbFile.filename()))),
       argThat(x -> x.stream().anyMatch(cs -> cs.ruleKey().rule().contains(vbActiveRule.ruleKey().rule()))),
-      argThat(x -> !x.isShouldUseCsharpEnterprise() && !x.isShouldUseVbEnterprise())))
+      argThat(x -> !x.shouldUseCsharpEnterprise() && !x.shouldUseVbEnterprise())))
         .thenReturn(List.of(vbIssue));
 
     underTest.execute(sensorContext);
@@ -202,7 +202,7 @@ class SqvsRoslynSensorTests {
     when(analysisRequestHandler.analyze(
       argThat(x -> x.stream().anyMatch(file -> file.contains(csFile.filename()))),
       argThat(x -> x.stream().anyMatch(cs -> cs.ruleKey().rule().contains(csActiveRule.ruleKey().rule()))),
-      argThat(x -> !x.isShouldUseCsharpEnterprise() && !x.isShouldUseVbEnterprise())))
+      argThat(x -> !x.shouldUseCsharpEnterprise() && !x.shouldUseVbEnterprise())))
         .thenReturn(List.of(csIssueWithSecondaryLocations));
 
     underTest.execute(sensorContext);
@@ -219,7 +219,7 @@ class SqvsRoslynSensorTests {
     when(analysisRequestHandler.analyze(
       argThat(x -> x.stream().anyMatch(file -> file.contains(vbFile.filename()))),
       argThat(x -> x.stream().anyMatch(cs -> cs.ruleKey().rule().contains(vbActiveRule.ruleKey().rule()))),
-      argThat(x -> !x.isShouldUseCsharpEnterprise() && !x.isShouldUseVbEnterprise())))
+      argThat(x -> !x.shouldUseCsharpEnterprise() && !x.shouldUseVbEnterprise())))
         .thenReturn(List.of(vbIssueWithSecondaryLocations));
 
     underTest.execute(sensorContext);
