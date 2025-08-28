@@ -40,10 +40,10 @@ public class HttpAnalysisRequestHandler {
     this.httpClientFactory = httpClientFactory;
   }
 
-  public Collection<RoslynIssue> analyze(Collection<String> fileNames, Collection<ActiveRule> activeRules) {
+  public Collection<RoslynIssue> analyze(Collection<String> fileNames, Collection<ActiveRule> activeRules, AnalyzerInfoDto analyzerInfo) {
     Collection<RoslynIssue> roslynIssues = new ArrayList<>();
     try {
-      var response = httpClientFactory.sendRequest(fileNames, activeRules);
+      var response = httpClientFactory.sendRequest(fileNames, activeRules, analyzerInfo);
       if (response.statusCode() != HttpURLConnection.HTTP_OK) {
         LOG.error("Response from server is {}.", response.statusCode());
         return roslynIssues;
@@ -55,7 +55,7 @@ public class HttpAnalysisRequestHandler {
         return roslynIssues;
       }
 
-      roslynIssues = responseDto.getRoslynIssues();
+      roslynIssues = responseDto.roslynIssues();
     } catch (InterruptedException e) {
       LOG.debug("Interrupted!", e);
       Thread.currentThread().interrupt();

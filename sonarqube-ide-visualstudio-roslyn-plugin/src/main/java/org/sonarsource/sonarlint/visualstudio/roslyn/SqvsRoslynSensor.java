@@ -35,6 +35,7 @@ import org.sonar.api.batch.sensor.issue.NewIssueLocation;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
+import org.sonarsource.sonarlint.visualstudio.roslyn.http.AnalyzerInfoDto;
 import org.sonarsource.sonarlint.visualstudio.roslyn.http.HttpAnalysisRequestHandler;
 import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssue;
 import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssueLocation;
@@ -43,9 +44,11 @@ public class SqvsRoslynSensor implements Sensor {
 
   private static final Logger LOG = Loggers.get(SqvsRoslynSensor.class);
   private final HttpAnalysisRequestHandler httpRequestHandler;
+  private final InstanceConfigurationProvider instanceConfigurationProvider;
 
-  public SqvsRoslynSensor(HttpAnalysisRequestHandler httpRequestHandler) {
+  public SqvsRoslynSensor(HttpAnalysisRequestHandler httpRequestHandler, InstanceConfigurationProvider instanceConfigurationProvider) {
     this.httpRequestHandler = httpRequestHandler;
+    this.instanceConfigurationProvider = instanceConfigurationProvider;
   }
 
   private static void handle(SensorContext context, RoslynIssue roslynIssue) {
@@ -145,7 +148,8 @@ public class SqvsRoslynSensor implements Sensor {
   private void analyze(SensorContext context, FilePredicate predicate) {
     var inputFiles = getFilePaths(context, predicate);
     var activeRules = getActiveRules(context);
-    var roslynIssues = httpRequestHandler.analyze(inputFiles, activeRules);
+    var analyzerInfo = getAnalyzerInfo();
+    var roslynIssues = httpRequestHandler.analyze(inputFiles, activeRules, analyzerInfo);
     for (var roslynIssue : roslynIssues) {
       handle(context, roslynIssue);
     }
@@ -164,4 +168,7 @@ public class SqvsRoslynSensor implements Sensor {
     return activeRules;
   }
 
+  private AnalyzerInfoDto getAnalyzerInfo() {
+    return new AnalyzerInfoDto(instanceConfigurationProvider.getShouldUseCsharpEnterprise(), instanceConfigurationProvider.getShouldUseVbEnterprise());
+  }
 }

@@ -31,8 +31,12 @@ public class SqvsRoslynPluginPropertyDefinitions {
   public static final String PLUGIN_PREFIX = "sqvs.";
   private static final String FILE_SUFFIXES_DESCRIPTION = "Comma-separated list of suffixes of files to analyze.";
 
-  public static String getAnalyzerPath() {
-    return PROP_PREFIX + LANGUAGE_KEY + ".internal.analyzerPath";
+  public static String getShouldUseCsharpEnterprise() {
+    return PROP_PREFIX + LANGUAGE_KEY + ".internal.shouldUseCsharpEnterprise";
+  }
+
+  public static String getShouldUseVbEnterprise() {
+    return PROP_PREFIX + LANGUAGE_KEY + ".internal.shouldUseVbEnterprise";
   }
 
   public static String getServerPort() {
@@ -64,15 +68,19 @@ public class SqvsRoslynPluginPropertyDefinitions {
         .onConfigScopes(PropertyDefinition.ConfigScope.PROJECT)
         .build());
     result.add(
-      PropertyDefinition.builder(getAnalyzerPath())
-        .hidden()
-        .build());
-    result.add(
       PropertyDefinition.builder(getServerPort())
         .hidden()
         .build());
     result.add(
       PropertyDefinition.builder(getServerToken())
+        .hidden()
+        .build());
+    result.add(
+      PropertyDefinition.builder(getShouldUseVbEnterprise())
+        .hidden()
+        .build());
+    result.add(
+      PropertyDefinition.builder(getShouldUseCsharpEnterprise())
         .hidden()
         .build());
     return result;

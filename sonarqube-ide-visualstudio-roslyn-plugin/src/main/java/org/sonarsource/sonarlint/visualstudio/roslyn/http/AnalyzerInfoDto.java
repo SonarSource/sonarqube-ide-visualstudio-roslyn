@@ -17,20 +17,10 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.visualstudio.roslyn;
+package org.sonarsource.sonarlint.visualstudio.roslyn.http;
 
-import org.junit.jupiter.api.Test;
+import com.google.gson.annotations.SerializedName;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-class SqvsRoslynPluginPropertyDefinitionsTests {
-
-  @Test
-  void shouldHaveExpectedPropertyDefinitions() {
-    assertThat(SqvsRoslynPluginPropertyDefinitions.getShouldUseCsharpEnterprise()).isEqualTo("sonar.cs.internal.shouldUseCsharpEnterprise");
-    assertThat(SqvsRoslynPluginPropertyDefinitions.getShouldUseVbEnterprise()).isEqualTo("sonar.cs.internal.shouldUseVbEnterprise");
-    assertThat(SqvsRoslynPluginPropertyDefinitions.getServerPort()).isEqualTo("sonar.cs.internal.roslynAnalyzerServerPort");
-    assertThat(SqvsRoslynPluginPropertyDefinitions.getServerToken()).isEqualTo("sonar.cs.internal.roslynAnalyzerServerToken");
-  }
-
+public record AnalyzerInfoDto(@SerializedName("ShouldUseCsharpEnterprise") boolean shouldUseCsharpEnterprise,
+  @SerializedName("ShouldUseVbEnterprise") boolean shouldUseVbEnterprise) {
 }

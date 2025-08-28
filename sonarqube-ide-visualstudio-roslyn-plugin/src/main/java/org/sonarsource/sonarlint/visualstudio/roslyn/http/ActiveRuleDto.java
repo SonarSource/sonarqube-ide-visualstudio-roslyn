@@ -22,23 +22,5 @@ package org.sonarsource.sonarlint.visualstudio.roslyn.http;
 import com.google.gson.annotations.SerializedName;
 import java.util.Map;
 
-public class ActiveRuleDto {
-  @SerializedName("RuleId")
-  private final String ruleId;
-
-  @SerializedName("Parameters")
-  private final Map<String, String> parameters;
-
-  public ActiveRuleDto(String ruleId, Map<String, String> parameters) {
-    this.ruleId = ruleId;
-    this.parameters = parameters;
-  }
-
-  public String getRuleId() {
-    return ruleId;
-  }
-
-  public Map<String, String> getParameters() {
-    return parameters;
-  }
+public record ActiveRuleDto(@SerializedName("RuleId") String ruleId, @SerializedName("Parameters") Map<String, String> parameters) {
 }

@@ -40,6 +40,7 @@ class HttpAnalysisRequestHandlerTests {
 
   private final Collection<String> fileNames = List.of("File1.cs", "File2.cs");
   private final Collection<ActiveRule> activeRules = List.of(mock(ActiveRule.class));
+  private final AnalyzerInfoDto analyzerInfo = new AnalyzerInfoDto(false, false);
   private HttpClientHandler httpClientHandler;
   private HttpAnalysisRequestHandler analysisRequestHandler;
   @RegisterExtension
@@ -55,17 +56,17 @@ class HttpAnalysisRequestHandlerTests {
   void analyze_requestSucceeds_ReturnsIssues() throws IOException, InterruptedException {
     mockResponseWithOneIssue(200);
 
-    var result = analysisRequestHandler.analyze(fileNames, activeRules);
+    var result = analysisRequestHandler.analyze(fileNames, activeRules, analyzerInfo);
 
     assertThat(result).hasSize(1);
-    verify(httpClientHandler).sendRequest(fileNames, activeRules);
+    verify(httpClientHandler).sendRequest(fileNames, activeRules, analyzerInfo);
   }
 
   @Test
   void analyze_requestSucceedsWithEmptyBody_logsAndReturnsEmptyIssues() throws IOException, InterruptedException {
     mockResponse(200, "");
 
-    var result = analysisRequestHandler.analyze(fileNames, activeRules);
+    var result = analysisRequestHandler.analyze(fileNames, activeRules, analyzerInfo);
 
     assertThat(result).isEmpty();
     assertThat(logTester.logs(LoggerLevel.WARN)).contains("No body received from the server.");
@@ -75,19 +76,19 @@ class HttpAnalysisRequestHandlerTests {
   void analyze_requestFails_returnsEmptyIssues() throws IOException, InterruptedException {
     mockResponseWithOneIssue(404);
 
-    var result = analysisRequestHandler.analyze(fileNames, activeRules);
+    var result = analysisRequestHandler.analyze(fileNames, activeRules, analyzerInfo);
 
     assertThat(result).isEmpty();
-    verify(httpClientHandler).sendRequest(fileNames, activeRules);
+    verify(httpClientHandler).sendRequest(fileNames, activeRules, analyzerInfo);
     assertThat(logTester.logs(LoggerLevel.ERROR)).contains("Response from server is 404.");
   }
 
   @Test
   void analyze_throws_logsAndReturnsEmptyIssues() throws IOException, InterruptedException {
     var exceptionMessage = "message";
-    when(httpClientHandler.sendRequest(fileNames, activeRules)).thenThrow(new RuntimeException(exceptionMessage));
+    when(httpClientHandler.sendRequest(fileNames, activeRules, analyzerInfo)).thenThrow(new RuntimeException(exceptionMessage));
 
-    var thrown = assertThrows(IllegalStateException.class, () -> analysisRequestHandler.analyze(fileNames, activeRules));
+    var thrown = assertThrows(IllegalStateException.class, () -> analysisRequestHandler.analyze(fileNames, activeRules, analyzerInfo));
 
     assertThat(thrown).hasMessageContaining("Response crashed due to: " + exceptionMessage);
   }
@@ -100,6 +101,6 @@ class HttpAnalysisRequestHandlerTests {
     var mockResponse = mock(HttpResponse.class);
     when(mockResponse.statusCode()).thenReturn(statusCode);
     when(mockResponse.body()).thenReturn(body);
-    when(httpClientHandler.sendRequest(fileNames, activeRules)).thenReturn(mockResponse);
+    when(httpClientHandler.sendRequest(fileNames, activeRules, analyzerInfo)).thenReturn(mockResponse);
   }
 }
