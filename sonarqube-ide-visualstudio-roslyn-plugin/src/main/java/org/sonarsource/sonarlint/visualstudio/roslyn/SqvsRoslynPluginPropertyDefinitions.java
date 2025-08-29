@@ -29,6 +29,7 @@ public class SqvsRoslynPluginPropertyDefinitions {
 
   public static final String PROP_PREFIX = "sonar.";
   public static final String PLUGIN_PREFIX = "sqvs.";
+  public static final String HTML_LANGUAGE_KEY = "web";
   private static final String FILE_SUFFIXES_DESCRIPTION = "Comma-separated list of suffixes of files to analyze.";
 
   public static String getShouldUseCsharpEnterprise() {

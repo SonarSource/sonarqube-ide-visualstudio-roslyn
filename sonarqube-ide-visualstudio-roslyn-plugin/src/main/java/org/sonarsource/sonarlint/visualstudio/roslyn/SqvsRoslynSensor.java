@@ -99,17 +99,27 @@ public class SqvsRoslynSensor implements Sensor {
   public void describe(SensorDescriptor descriptor) {
     descriptor
       .name("SQVS-Roslyn")
-      .onlyOnLanguages(CSharpLanguage.LANGUAGE_KEY, VbNetLanguage.LANGUAGE_KEY)
+      // the file extensions for razor files are already defined for HTML language, so they can't be associated with C#/VB.NET due to plugin limitations,
+      // so we have to enable executing the sensor for HTML language
+      .onlyOnLanguages(CSharpLanguage.LANGUAGE_KEY, VbNetLanguage.LANGUAGE_KEY, SqvsRoslynPluginPropertyDefinitions.HTML_LANGUAGE_KEY)
       .createIssuesForRuleRepositories(CSharpLanguage.REPOSITORY_KEY, VbNetLanguage.REPOSITORY_KEY);
   }
 
   @Override
   public void execute(SensorContext context) {
-    FilePredicate predicate = context.fileSystem().predicates().hasLanguages(CSharpLanguage.LANGUAGE_KEY, VbNetLanguage.LANGUAGE_KEY);
-    if (!context.fileSystem().hasFiles(predicate)) {
+    var isRoslynLanguagesOrRazorFilesPredicate = getIsRoslynLanguagesOrRazorFilesPredicate(context);
+    if (!context.fileSystem().hasFiles(isRoslynLanguagesOrRazorFilesPredicate)) {
       return;
     }
-    analyze(context, predicate);
+    analyze(context, isRoslynLanguagesOrRazorFilesPredicate);
+  }
+
+  private FilePredicate getIsRoslynLanguagesOrRazorFilesPredicate(SensorContext context) {
+    return context.fileSystem().predicates().or(
+      context.fileSystem().predicates().hasLanguages(CSharpLanguage.LANGUAGE_KEY, VbNetLanguage.LANGUAGE_KEY),
+      // if it's HTML language, make sure to only analyze the razor files
+      context.fileSystem().predicates().hasExtension(CSharpLanguage.RAZOR_EXTENSION),
+      context.fileSystem().predicates().hasExtension(VbNetLanguage.RAZOR_EXTENSION));
   }
 
   // TODO by https://sonarsource.atlassian.net/browse/SLVS-2492 handle quickfixes once they are returned from the server
