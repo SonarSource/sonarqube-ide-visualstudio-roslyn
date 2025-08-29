@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -46,6 +46,8 @@
     <jdk.min.version>11</jdk.min.version>
     <license.name>GNU LGPL v3</license.name>
     <maven.compiler.release>17</maven.compiler.release>
+    <sonar.organization>sonarsource</sonar.organization>
+    <sonar.projectKey>SonarSource_sonarqube-ide-visualstudio-roslyn</sonar.projectKey>
   </properties>
 
   <dependencyManagement>
@@ -88,5 +90,4 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
-
 </project>
