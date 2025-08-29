@@ -46,6 +46,7 @@ import org.sonar.api.batch.sensor.issue.Issue;
 import org.sonar.api.batch.sensor.issue.IssueLocation;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.testfixtures.log.LogTesterJUnit5;
+import org.sonar.api.utils.log.LoggerLevel;
 import org.sonarsource.sonarlint.visualstudio.roslyn.http.HttpAnalysisRequestHandler;
 import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssue;
 import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssueFlow;
@@ -274,6 +275,22 @@ class SqvsRoslynSensorTests {
     verifyExpectedRoslynIssue(vbIssueWithSecondaryLocations);
   }
 
+  @Test
+  void analyze_handleOneIssueThrowsException_logsAndShowsOtherIssues() {
+    sensorContext.fileSystem().add(vbFile);
+    sensorContext.setActiveRules(new ActiveRulesBuilder()
+      .addRule(vbActiveRule)
+      .build());
+    var vbWrongIssue = mockRoslynIssueWithWrongLocation(vbActiveRule.ruleKey().rule(), VbNetLanguage.REPOSITORY_KEY, vbFile.filename());
+    when(analysisRequestHandler.analyze(any(), any(), any()))
+      .thenReturn(List.of(vbIssue, vbWrongIssue));
+
+    underTest.execute(sensorContext);
+
+    verifyExpectedRoslynIssue(vbIssue);
+    assertThat(logTester.logs(LoggerLevel.ERROR)).contains(String.format("Issue %s can not be saved due to ", vbWrongIssue.getRuleId()));
+  }
+
   private void mockInputFiles(SensorContextTester sensorContextTester, String... fileNames) throws IOException {
     for (var fileName : fileNames) {
       mockInputFile(sensorContextTester, fileName, "some content");
@@ -343,6 +360,14 @@ class SqvsRoslynSensorTests {
     var flows = List.of(mockIssueFlow(secondaryLocation), mockIssueFlow(secondaryLocationOnAnotherFile));
     when(roslynIssue.getFlows()).thenReturn(flows);
 
+    return roslynIssue;
+  }
+
+  private RoslynIssue mockRoslynIssueWithWrongLocation(String ruleKey, String repository, String filePath) {
+    var roslynIssue = mockRoslynIssue(ruleKey, repository, filePath);
+    var primaryLocation = mockIssueLocation(vbFile.filename());
+    when(roslynIssue.getPrimaryLocation()).thenReturn(primaryLocation);
+    mockTextRange(primaryLocation, 666, 666, 600, 700);
     return roslynIssue;
   }
 

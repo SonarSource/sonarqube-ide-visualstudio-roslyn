@@ -161,7 +161,11 @@ public class SqvsRoslynSensor implements Sensor {
     var analyzerInfo = getAnalyzerInfo();
     var roslynIssues = httpRequestHandler.analyze(inputFiles, activeRules, analyzerInfo);
     for (var roslynIssue : roslynIssues) {
-      handle(context, roslynIssue);
+      try {
+        handle(context, roslynIssue);
+      } catch (Exception exception) {
+        LOG.error(String.format("Issue %s can not be saved due to ", roslynIssue.getRuleId()), exception.fillInStackTrace());
+      }
     }
   }
 
