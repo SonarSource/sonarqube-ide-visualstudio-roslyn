@@ -35,6 +35,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.slf4j.event.Level;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.TextRange;
 import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
@@ -45,8 +46,8 @@ import org.sonar.api.batch.sensor.internal.SensorContextTester;
 import org.sonar.api.batch.sensor.issue.Issue;
 import org.sonar.api.batch.sensor.issue.IssueLocation;
 import org.sonar.api.rule.RuleKey;
+import org.sonar.api.testfixtures.log.LogAndArguments;
 import org.sonar.api.testfixtures.log.LogTesterJUnit5;
-import org.sonar.api.utils.log.LoggerLevel;
 import org.sonarsource.sonarlint.visualstudio.roslyn.http.HttpAnalysisRequestHandler;
 import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssue;
 import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssueFlow;
@@ -288,7 +289,8 @@ class SqvsRoslynSensorTests {
     underTest.execute(sensorContext);
 
     verifyExpectedRoslynIssue(vbIssue);
-    assertThat(logTester.logs(LoggerLevel.ERROR)).contains(String.format("Issue %s can not be saved due to ", vbWrongIssue.getRuleId()));
+
+    assertThat(getLog(Level.ERROR).getRawMsg()).contains(String.format("Issue %s can not be saved due to ", vbWrongIssue.getRuleId()));
   }
 
   private void mockInputFiles(SensorContextTester sensorContextTester, String... fileNames) throws IOException {
@@ -409,5 +411,11 @@ class SqvsRoslynSensorTests {
   private void mockSettings(boolean shouldUseCsharpEnterprise, boolean shouldUseVbnetEnterprise) {
     when(instanceConfigurationProvider.getShouldUseCsharpEnterprise()).thenReturn(shouldUseCsharpEnterprise);
     when(instanceConfigurationProvider.getShouldUseVbEnterprise()).thenReturn(shouldUseVbnetEnterprise);
+  }
+
+  private LogAndArguments getLog(Level level) {
+    var errorLogs = logTester.getLogs(level);
+    assertThat(errorLogs).hasSize(1);
+    return errorLogs.get(0);
   }
 }
