@@ -25,12 +25,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.TextRange;
@@ -43,6 +46,7 @@ import org.sonar.api.batch.sensor.issue.Issue;
 import org.sonar.api.batch.sensor.issue.IssueLocation;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.testfixtures.log.LogTesterJUnit5;
+import org.sonar.api.utils.log.LoggerLevel;
 import org.sonarsource.sonarlint.visualstudio.roslyn.http.HttpAnalysisRequestHandler;
 import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssue;
 import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssueFlow;
@@ -50,6 +54,8 @@ import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssueLocatio
 import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssueTextRange;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -73,6 +79,25 @@ class SqvsRoslynSensorTests {
   private RoslynIssue csharpIssue;
   private RoslynIssue vbIssue;
 
+  static Stream<Arguments> allowedFilesForAnalysis() {
+    return Stream.of(
+      Arguments.of("foo.cs", CSharpLanguage.LANGUAGE_KEY),
+      Arguments.of("foo.razor", CSharpLanguage.LANGUAGE_KEY),
+      Arguments.of("foo.cshtml", SqvsRoslynPluginPropertyDefinitions.HTML_LANGUAGE_KEY),
+      Arguments.of("foo.vb", VbNetLanguage.LANGUAGE_KEY),
+      Arguments.of("foo.vbhtml", SqvsRoslynPluginPropertyDefinitions.HTML_LANGUAGE_KEY));
+  }
+
+  static Stream<Arguments> notAllowedFilesForAnalysis() {
+    return Stream.of(
+      Arguments.of("foo.php", "php"),
+      Arguments.of("foo.cpp", "cpp"),
+      Arguments.of("foo.html", SqvsRoslynPluginPropertyDefinitions.HTML_LANGUAGE_KEY),
+      Arguments.of("foo.xhtml", SqvsRoslynPluginPropertyDefinitions.HTML_LANGUAGE_KEY),
+      Arguments.of("foo.aspx", SqvsRoslynPluginPropertyDefinitions.HTML_LANGUAGE_KEY),
+      Arguments.of("foo.shtml", SqvsRoslynPluginPropertyDefinitions.HTML_LANGUAGE_KEY));
+  }
+
   @BeforeEach
   void prepare(@TempDir Path tmp) throws Exception {
     analysisRequestHandler = mock(HttpAnalysisRequestHandler.class);
@@ -80,10 +105,10 @@ class SqvsRoslynSensorTests {
     baseDir = tmp.toRealPath();
     sensorContext = SensorContextTester.create(baseDir);
     underTest = new SqvsRoslynSensor(analysisRequestHandler, instanceConfigurationProvider);
-    csFile = createInputFile("foo.cs", "var a=1;");
-    csFile2 = createInputFile("foo2.cs", "var b=2;");
-    vbFile = createInputFile("boo.vb", "Dim a As Integer = 1");
-    vbFile2 = createInputFile("boo2.vb", "Dim b As Integer = 2");
+    csFile = createInputFile("foo.cs", "var a=1;", CSharpLanguage.LANGUAGE_KEY);
+    csFile2 = createInputFile("foo2.cs", "var b=2;", CSharpLanguage.LANGUAGE_KEY);
+    vbFile = createInputFile("boo.vb", "Dim a As Integer = 1", VbNetLanguage.LANGUAGE_KEY);
+    vbFile2 = createInputFile("boo2.vb", "Dim b As Integer = 2", VbNetLanguage.LANGUAGE_KEY);
     csharpIssue = mockRoslynIssue("S123", CSharpLanguage.REPOSITORY_KEY, csFile.filename());
     vbIssue = mockRoslynIssue("S456", VbNetLanguage.REPOSITORY_KEY, vbFile.filename());
   }
@@ -95,12 +120,35 @@ class SqvsRoslynSensorTests {
     underTest.describe(descriptor);
 
     assertThat(descriptor.name()).isEqualTo("SQVS-Roslyn");
-    assertThat(descriptor.languages()).contains(CSharpLanguage.LANGUAGE_KEY, VbNetLanguage.LANGUAGE_KEY);
+    assertThat(descriptor.languages()).contains(CSharpLanguage.LANGUAGE_KEY, VbNetLanguage.LANGUAGE_KEY, SqvsRoslynPluginPropertyDefinitions.HTML_LANGUAGE_KEY);
     assertThat(descriptor.ruleRepositories()).contains(CSharpLanguage.REPOSITORY_KEY, VbNetLanguage.REPOSITORY_KEY);
   }
 
   @Test
   void noopIfNoFiles() {
+    underTest.execute(sensorContext);
+
+    verifyNoInteractions(analysisRequestHandler);
+  }
+
+  @ParameterizedTest
+  @MethodSource("allowedFilesForAnalysis")
+  void analyzeCsharpAndVbNetAndRazor_executesAnalysis(String fileName, String languageKey) throws IOException {
+    var file = createInputFile(fileName, "some content", languageKey);
+    sensorContext.fileSystem().add(file);
+
+    underTest.execute(sensorContext);
+
+    verify(analysisRequestHandler).analyze(argThat(fileNames -> fileNames.stream().anyMatch(f -> f.contains(fileName))),
+      anyList(), any());
+  }
+
+  @ParameterizedTest
+  @MethodSource("notAllowedFilesForAnalysis")
+  void analyzeOtherLanguages_doesNotExecuteAnalysis(String fileName, String languageKey) throws IOException {
+    var file = createInputFile(fileName, "some content", languageKey);
+    sensorContext.fileSystem().add(file);
+
     underTest.execute(sensorContext);
 
     verifyNoInteractions(analysisRequestHandler);
@@ -227,6 +275,22 @@ class SqvsRoslynSensorTests {
     verifyExpectedRoslynIssue(vbIssueWithSecondaryLocations);
   }
 
+  @Test
+  void analyze_handleOneIssueThrowsException_logsAndShowsOtherIssues() {
+    sensorContext.fileSystem().add(vbFile);
+    sensorContext.setActiveRules(new ActiveRulesBuilder()
+      .addRule(vbActiveRule)
+      .build());
+    var vbWrongIssue = mockRoslynIssueWithWrongLocation(vbActiveRule.ruleKey().rule(), VbNetLanguage.REPOSITORY_KEY, vbFile.filename());
+    when(analysisRequestHandler.analyze(any(), any(), any()))
+      .thenReturn(List.of(vbIssue, vbWrongIssue));
+
+    underTest.execute(sensorContext);
+
+    verifyExpectedRoslynIssue(vbIssue);
+    assertThat(logTester.logs(LoggerLevel.ERROR)).contains(String.format("Issue %s can not be saved due to ", vbWrongIssue.getRuleId()));
+  }
+
   private void mockInputFiles(SensorContextTester sensorContextTester, String... fileNames) throws IOException {
     for (var fileName : fileNames) {
       mockInputFile(sensorContextTester, fileName, "some content");
@@ -234,14 +298,14 @@ class SqvsRoslynSensorTests {
   }
 
   private void mockInputFile(SensorContextTester sensorContextTester, String fileName, String content) throws IOException {
-    var file = createInputFile(fileName, content);
+    var languageKey = fileName.endsWith(".vb") ? VbNetLanguage.LANGUAGE_KEY : CSharpLanguage.LANGUAGE_KEY;
+    var file = createInputFile(fileName, content, languageKey);
     sensorContextTester.fileSystem().add(file);
   }
 
-  private InputFile createInputFile(String fileName, String content) throws IOException {
+  private InputFile createInputFile(String fileName, String content, String languageKey) throws IOException {
     Path filePath = baseDir.resolve(fileName);
     Files.write(filePath, content.getBytes(StandardCharsets.UTF_8));
-    var languageKey = fileName.endsWith(".vb") ? VbNetLanguage.LANGUAGE_KEY : CSharpLanguage.LANGUAGE_KEY;
 
     return TestInputFileBuilder.create("", filePath.toString())
       .setModuleBaseDir(baseDir)
@@ -296,6 +360,14 @@ class SqvsRoslynSensorTests {
     var flows = List.of(mockIssueFlow(secondaryLocation), mockIssueFlow(secondaryLocationOnAnotherFile));
     when(roslynIssue.getFlows()).thenReturn(flows);
 
+    return roslynIssue;
+  }
+
+  private RoslynIssue mockRoslynIssueWithWrongLocation(String ruleKey, String repository, String filePath) {
+    var roslynIssue = mockRoslynIssue(ruleKey, repository, filePath);
+    var primaryLocation = mockIssueLocation(vbFile.filename());
+    when(roslynIssue.getPrimaryLocation()).thenReturn(primaryLocation);
+    mockTextRange(primaryLocation, 666, 666, 600, 700);
     return roslynIssue;
   }
 

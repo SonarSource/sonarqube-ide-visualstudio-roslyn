@@ -32,6 +32,7 @@ public class CSharpLanguage extends AbstractLanguage {
   public static final String FILE_SUFFIXES_KEY = SqvsRoslynPluginPropertyDefinitions.PROP_PREFIX + LANGUAGE_KEY + "." + SqvsRoslynPluginPropertyDefinitions.PLUGIN_PREFIX
     + "file.suffixes";
   public static final String FILE_SUFFIXES_NAME = "CSharp file suffixes";
+  public static final String RAZOR_EXTENSION = "cshtml";
   private final Configuration configuration;
 
   public CSharpLanguage(Configuration configuration) {
