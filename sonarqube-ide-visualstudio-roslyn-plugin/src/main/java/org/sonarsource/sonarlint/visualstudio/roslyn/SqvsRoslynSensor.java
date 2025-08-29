@@ -114,7 +114,7 @@ public class SqvsRoslynSensor implements Sensor {
     analyze(context, isRoslynLanguagesOrRazorFilesPredicate);
   }
 
-  private FilePredicate getIsRoslynLanguagesOrRazorFilesPredicate(SensorContext context) {
+  private static FilePredicate getIsRoslynLanguagesOrRazorFilesPredicate(SensorContext context) {
     return context.fileSystem().predicates().or(
       context.fileSystem().predicates().hasLanguages(CSharpLanguage.LANGUAGE_KEY, VbNetLanguage.LANGUAGE_KEY),
       // if it's HTML language, make sure to only analyze the razor files
