@@ -29,8 +29,8 @@ class SqvsRoslynPluginPropertyDefinitionsTests {
   void shouldHaveExpectedPropertyDefinitions() {
     assertThat(SqvsRoslynPluginPropertyDefinitions.getShouldUseCsharpEnterprise()).isEqualTo("sonar.cs.internal.shouldUseCsharpEnterprise");
     assertThat(SqvsRoslynPluginPropertyDefinitions.getShouldUseVbEnterprise()).isEqualTo("sonar.cs.internal.shouldUseVbEnterprise");
-    assertThat(SqvsRoslynPluginPropertyDefinitions.getServerPort()).isEqualTo("sonar.cs.internal.roslynAnalyzerServerPort");
-    assertThat(SqvsRoslynPluginPropertyDefinitions.getServerToken()).isEqualTo("sonar.cs.internal.roslynAnalyzerServerToken");
+    assertThat(SqvsRoslynPluginPropertyDefinitions.getServerPort()).isEqualTo("sonar.sqvsRoslynPlugin.internal.serverPort");
+    assertThat(SqvsRoslynPluginPropertyDefinitions.getServerToken()).isEqualTo("sonar.sqvsRoslynPlugin.internal.serverToken");
   }
 
 }

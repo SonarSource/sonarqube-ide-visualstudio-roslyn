@@ -28,7 +28,7 @@ import static org.sonarsource.sonarlint.visualstudio.roslyn.CSharpLanguage.LANGU
 public class SqvsRoslynPluginPropertyDefinitions {
 
   public static final String PROP_PREFIX = "sonar.";
-  public static final String PLUGIN_PREFIX = "sqvs.";
+  public static final String PLUGIN_PREFIX = "sqvsRoslynPlugin";
   public static final String HTML_LANGUAGE_KEY = "web";
   private static final String FILE_SUFFIXES_DESCRIPTION = "Comma-separated list of suffixes of files to analyze.";
 
@@ -41,11 +41,11 @@ public class SqvsRoslynPluginPropertyDefinitions {
   }
 
   public static String getServerPort() {
-    return PROP_PREFIX + LANGUAGE_KEY + ".internal.roslynAnalyzerServerPort";
+    return PROP_PREFIX + PLUGIN_PREFIX + ".internal.serverPort";
   }
 
   public static String getServerToken() {
-    return PROP_PREFIX + LANGUAGE_KEY + ".internal.roslynAnalyzerServerToken";
+    return PROP_PREFIX + PLUGIN_PREFIX + ".internal.serverToken";
   }
 
   public List<PropertyDefinition> create() {

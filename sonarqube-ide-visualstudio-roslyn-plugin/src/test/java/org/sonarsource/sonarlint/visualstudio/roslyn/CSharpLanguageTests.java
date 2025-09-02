@@ -47,7 +47,7 @@ class CSharpLanguageTests {
     assertThat(CSharpLanguage.LANGUAGE_NAME).isEqualTo("C#");
     assertThat(CSharpLanguage.REPOSITORY_KEY).isEqualTo("csharpsquid");
     assertThat(CSharpLanguage.FILE_SUFFIXES_DEFVALUE).isEqualTo(".cs,.cshtml,.razor");
-    assertThat(CSharpLanguage.FILE_SUFFIXES_KEY).isEqualTo("sonar.cs.sqvs.file.suffixes");
+    assertThat(CSharpLanguage.FILE_SUFFIXES_KEY).isEqualTo("sonar.cs.sqvsRoslynPlugin.file.suffixes");
   }
 
   @Test
