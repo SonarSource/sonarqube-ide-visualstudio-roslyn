@@ -21,35 +21,11 @@ package org.sonarsource.sonarlint.visualstudio.roslyn.protocol;
 
 import com.google.gson.annotations.SerializedName;
 
-import java.util.List;
+public class RoslynIssueQuickFix {
+  @SerializedName("Value")
+  private String value;
 
-public class RoslynIssue {
-    @SerializedName("RuleId")
-    private String ruleId;
-
-    @SerializedName("PrimaryLocation")
-    private RoslynIssueLocation primaryLocation;
-
-    @SerializedName("Flows")
-    private List<RoslynIssueFlow> flows;
-
-    @SerializedName("QuickFixes")
-    private List<RoslynIssueQuickFix> quickFixes;
-
-    public String getRuleId() {
-        return ruleId;
-    }
-
-    public RoslynIssueLocation getPrimaryLocation() {
-        return primaryLocation;
-    }
-
-    public List<RoslynIssueFlow> getFlows() {
-        return flows;
-    }
-
-    public List<RoslynIssueQuickFix> getQuickFixes() {
-        return quickFixes;
-    }
+  public String getValue() {
+    return value;
+  }
 }
-
