@@ -49,7 +49,6 @@ import org.sonar.api.batch.sensor.issue.IssueLocation;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.testfixtures.log.LogAndArguments;
 import org.sonar.api.testfixtures.log.LogTesterJUnit5;
-import org.sonar.api.utils.log.LoggerLevel;
 import org.sonarsource.sonarlint.visualstudio.roslyn.http.HttpAnalysisRequestHandler;
 import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssue;
 import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssueFlow;
@@ -303,7 +302,7 @@ class SqvsRoslynSensorTests {
     underTest.execute(sensorContext);
 
     verifyExpectedRoslynIssue(vbIssue);
-    assertThat(logTester.logs(LoggerLevel.ERROR)).contains(String.format("Issue %s can not be saved due to ", vbWrongIssue.getRuleId()));
+    assertThat(getLog(Level.ERROR).getRawMsg()).contains(String.format("Issue %s can not be saved due to ", vbWrongIssue.getRuleId()));
   }
 
   private void mockInputFiles(SensorContextTester sensorContextTester, String... fileNames) throws IOException {
