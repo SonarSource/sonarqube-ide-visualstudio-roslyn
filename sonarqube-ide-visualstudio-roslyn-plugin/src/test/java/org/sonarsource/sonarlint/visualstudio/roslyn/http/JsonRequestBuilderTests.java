@@ -51,23 +51,25 @@ class JsonRequestBuilderTests {
   void buildBody_withEmptyCollections_shouldReturnValidJson() {
     var fileNames = new ArrayList<String>();
     var activeRules = new ArrayList<ActiveRule>();
+    var analysisProperties = Map.<String, String>of();
     var analyzerInfo = new AnalyzerInfoDto(false, false);
-    var expected = "{\"FileNames\":[],\"ActiveRules\":[],\"AnalyzerInfo\":{\"ShouldUseCsharpEnterprise\":false,\"ShouldUseVbEnterprise\":false}}";
+    var expected = "{\"FileNames\":[],\"ActiveRules\":[],\"AnalysisProperties\":{},\"AnalyzerInfo\":{\"ShouldUseCsharpEnterprise\":false,\"ShouldUseVbEnterprise\":false}}";
 
-    var result = jsonParser.buildBody(fileNames, activeRules, analyzerInfo);
+    var result = jsonParser.buildBody(fileNames, activeRules, analysisProperties, analyzerInfo);
 
     assertThat(result).isEqualTo(expected);
   }
 
   @Test
-  void buildBody_withFileNamesAndActiveRules_shouldReturnValidJson() {
+  void buildBody_withAllParametersFilled_shouldReturnValidJson() {
     var fileNames = List.of("File1.cs", "File2.vb");
     var activeRules = List.of(createMockActiveRule("S100", CSharpLanguage.REPOSITORY_KEY, new HashMap<>()),
       createMockActiveRule("S101", VbNetLanguage.REPOSITORY_KEY, new HashMap<>()));
+    var analysisProperties = Map.of("sonar.vb.disableRazor", "false");
     var analyzerInfo = new AnalyzerInfoDto(true, false);
-    var expected = "{\"FileNames\":[\"File1.cs\",\"File2.vb\"],\"ActiveRules\":[{\"RuleId\":\"csharpsquid:S100\",\"Parameters\":{}},{\"RuleId\":\"vbnet:S101\",\"Parameters\":{}}],\"AnalyzerInfo\":{\"ShouldUseCsharpEnterprise\":true,\"ShouldUseVbEnterprise\":false}}";
+    var expected = "{\"FileNames\":[\"File1.cs\",\"File2.vb\"],\"ActiveRules\":[{\"RuleId\":\"csharpsquid:S100\",\"Parameters\":{}},{\"RuleId\":\"vbnet:S101\",\"Parameters\":{}}],\"AnalysisProperties\":{\"sonar.vb.disableRazor\":\"false\"},\"AnalyzerInfo\":{\"ShouldUseCsharpEnterprise\":true,\"ShouldUseVbEnterprise\":false}}";
 
-    var result = jsonParser.buildBody(fileNames, activeRules, analyzerInfo);
+    var result = jsonParser.buildBody(fileNames, activeRules, analysisProperties, analyzerInfo);
 
     assertThat(result).isEqualTo(expected);
   }
@@ -76,10 +78,11 @@ class JsonRequestBuilderTests {
   void buildBody_withActiveRules_shouldReturnRuleId() {
     var fileNames = new ArrayList<String>();
     var activeRule = createMockActiveRule("S100", CSharpLanguage.REPOSITORY_KEY, new HashMap<>());
+    var analysisProperties = Map.<String, String>of();
     var analyzerInfo = new AnalyzerInfoDto(false, true);
-    var expected = "{\"FileNames\":[],\"ActiveRules\":[{\"RuleId\":\"csharpsquid:S100\",\"Parameters\":{}}],\"AnalyzerInfo\":{\"ShouldUseCsharpEnterprise\":false,\"ShouldUseVbEnterprise\":true}}";
+    var expected = "{\"FileNames\":[],\"ActiveRules\":[{\"RuleId\":\"csharpsquid:S100\",\"Parameters\":{}}],\"AnalysisProperties\":{},\"AnalyzerInfo\":{\"ShouldUseCsharpEnterprise\":false,\"ShouldUseVbEnterprise\":true}}";
 
-    var result = jsonParser.buildBody(fileNames, List.of(activeRule), analyzerInfo);
+    var result = jsonParser.buildBody(fileNames, List.of(activeRule), analysisProperties, analyzerInfo);
 
     assertThat(result).isEqualTo(expected);
   }
@@ -87,6 +90,7 @@ class JsonRequestBuilderTests {
   @Test
   void buildBody_withActiveRulesWithParams_shouldIncludeParams() {
     var fileNames = new ArrayList<String>();
+    var analysisProperties = Map.<String, String>of();
     var params = new HashMap<String, String>();
     params.put("maximum", "10");
     params.put("isRegularExpression", "true");
@@ -94,9 +98,9 @@ class JsonRequestBuilderTests {
     var vbnetRuleWithParams = createMockActiveRule("S1066", VbNetLanguage.REPOSITORY_KEY, params);
     var activeRules = List.of(csharpRuleWithParams, vbnetRuleWithParams);
     var analyzerInfo = new AnalyzerInfoDto(true, true);
-    var expected = "{\"FileNames\":[],\"ActiveRules\":[{\"RuleId\":\"csharpsquid:S1003\",\"Parameters\":{\"maximum\":\"10\",\"isRegularExpression\":\"true\"}},{\"RuleId\":\"vbnet:S1066\",\"Parameters\":{\"maximum\":\"10\",\"isRegularExpression\":\"true\"}}],\"AnalyzerInfo\":{\"ShouldUseCsharpEnterprise\":true,\"ShouldUseVbEnterprise\":true}}";
+    var expected = "{\"FileNames\":[],\"ActiveRules\":[{\"RuleId\":\"csharpsquid:S1003\",\"Parameters\":{\"maximum\":\"10\",\"isRegularExpression\":\"true\"}},{\"RuleId\":\"vbnet:S1066\",\"Parameters\":{\"maximum\":\"10\",\"isRegularExpression\":\"true\"}}],\"AnalysisProperties\":{},\"AnalyzerInfo\":{\"ShouldUseCsharpEnterprise\":true,\"ShouldUseVbEnterprise\":true}}";
 
-    var result = jsonParser.buildBody(fileNames, activeRules, analyzerInfo);
+    var result = jsonParser.buildBody(fileNames, activeRules, analysisProperties, analyzerInfo);
 
     assertThat(result).isEqualTo(expected);
   }
@@ -105,9 +109,10 @@ class JsonRequestBuilderTests {
   void buildBody_withNullCollections_throws() {
     Collection<String> fileNames = null;
     Collection<ActiveRule> activeRules = null;
+    Map<String, String> analysisProperties = null;
     AnalyzerInfoDto analyzerInfo = null;
 
-    assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> jsonParser.buildBody(fileNames, activeRules, analyzerInfo));
+    assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> jsonParser.buildBody(fileNames, activeRules, analysisProperties, analyzerInfo));
   }
 
   @Test
@@ -117,10 +122,11 @@ class JsonRequestBuilderTests {
       "file\"with\"quotes.cs",
       "file\\with\\backslashes.cs");
     var activeRules = new ArrayList<ActiveRule>();
+    var analysisProperties = Map.<String, String>of();
     var analyzerInfo = new AnalyzerInfoDto(false, false);
-    var expected = "{\"FileNames\":[\"file with spaces.cs\",\"file\\\"with\\\"quotes.cs\",\"file\\\\with\\\\backslashes.cs\"],\"ActiveRules\":[],\"AnalyzerInfo\":{\"ShouldUseCsharpEnterprise\":false,\"ShouldUseVbEnterprise\":false}}";
+    var expected = "{\"FileNames\":[\"file with spaces.cs\",\"file\\\"with\\\"quotes.cs\",\"file\\\\with\\\\backslashes.cs\"],\"ActiveRules\":[],\"AnalysisProperties\":{},\"AnalyzerInfo\":{\"ShouldUseCsharpEnterprise\":false,\"ShouldUseVbEnterprise\":false}}";
 
-    var result = jsonParser.buildBody(fileNames, activeRules, analyzerInfo);
+    var result = jsonParser.buildBody(fileNames, activeRules, analysisProperties, analyzerInfo);
 
     assertThat(result).isEqualTo(expected);
     var fileNamesArray = JsonParser.parseString(result).getAsJsonObject().get("FileNames").getAsJsonArray();

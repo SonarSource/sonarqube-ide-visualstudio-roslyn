@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.net.http.HttpHeaders;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.sonar.api.batch.rule.ActiveRule;
@@ -62,17 +63,18 @@ class HttpClientHandlerTests {
   void sendRequest_callsParserWithExpectedParameters() throws IOException, InterruptedException {
     JsonRequestBuilder myMock = mock(JsonRequestBuilder.class);
     Collection<String> fileNames = List.of("File1.cs", "File2.cs");
+    Map<String, String> analysisProperties = Map.of();
     var analyzerInfo = new AnalyzerInfoDto(true, true);
     Collection<ActiveRule> activeRules = List.of(createMockActiveRule("S100"));
     var httpClientHandler = new HttpClientHandler(sensorContext, myMock);
 
     try {
-      httpClientHandler.sendRequest(fileNames, activeRules, analyzerInfo);
+      httpClientHandler.sendRequest(fileNames, activeRules, analysisProperties, analyzerInfo);
     } catch (Exception ex) {
       // expecting request to fail
     }
 
-    verify(myMock).buildBody(fileNames, activeRules, analyzerInfo);
+    verify(myMock).buildBody(fileNames, activeRules, analysisProperties, analyzerInfo);
   }
 
   private ActiveRule createMockActiveRule(String ruleId) {

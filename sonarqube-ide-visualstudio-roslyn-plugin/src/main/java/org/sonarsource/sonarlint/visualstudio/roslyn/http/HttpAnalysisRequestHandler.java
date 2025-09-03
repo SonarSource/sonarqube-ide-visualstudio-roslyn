@@ -23,6 +23,7 @@ import com.google.gson.Gson;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Map;
 import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.scanner.ScannerSide;
 import org.sonar.api.utils.log.Logger;
@@ -40,10 +41,10 @@ public class HttpAnalysisRequestHandler {
     this.httpClientFactory = httpClientFactory;
   }
 
-  public Collection<RoslynIssue> analyze(Collection<String> fileNames, Collection<ActiveRule> activeRules, AnalyzerInfoDto analyzerInfo) {
+  public Collection<RoslynIssue> analyze(Collection<String> fileNames, Collection<ActiveRule> activeRules, Map<String, String> analysisProperties, AnalyzerInfoDto analyzerInfo) {
     Collection<RoslynIssue> roslynIssues = new ArrayList<>();
     try {
-      var response = httpClientFactory.sendRequest(fileNames, activeRules, analyzerInfo);
+      var response = httpClientFactory.sendRequest(fileNames, activeRules, analysisProperties, analyzerInfo);
       if (response.statusCode() != HttpURLConnection.HTTP_OK) {
         LOG.error("Response from server is {}.", response.statusCode());
         return roslynIssues;
