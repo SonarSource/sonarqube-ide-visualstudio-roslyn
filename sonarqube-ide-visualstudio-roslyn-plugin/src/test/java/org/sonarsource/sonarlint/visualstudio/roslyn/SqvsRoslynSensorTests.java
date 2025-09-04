@@ -25,6 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,6 +71,7 @@ class SqvsRoslynSensorTests {
   LogTesterJUnit5 logTester = new LogTesterJUnit5();
   private HttpAnalysisRequestHandler analysisRequestHandler;
   private InstanceConfigurationProvider instanceConfigurationProvider;
+  private AnalysisPropertiesProvider analysisPropertiesProvider;
   private SensorContextTester sensorContext;
   private SqvsRoslynSensor underTest;
   private Path baseDir;
@@ -102,10 +104,11 @@ class SqvsRoslynSensorTests {
   @BeforeEach
   void prepare(@TempDir Path tmp) throws Exception {
     analysisRequestHandler = mock(HttpAnalysisRequestHandler.class);
+    analysisPropertiesProvider = mock(AnalysisPropertiesProvider.class);
     instanceConfigurationProvider = mock(InstanceConfigurationProvider.class);
     baseDir = tmp.toRealPath();
     sensorContext = SensorContextTester.create(baseDir);
-    underTest = new SqvsRoslynSensor(analysisRequestHandler, instanceConfigurationProvider);
+    underTest = new SqvsRoslynSensor(analysisRequestHandler, instanceConfigurationProvider, analysisPropertiesProvider);
     csFile = createInputFile("foo.cs", "var a=1;", CSharpLanguage.LANGUAGE_KEY);
     csFile2 = createInputFile("foo2.cs", "var b=2;", CSharpLanguage.LANGUAGE_KEY);
     vbFile = createInputFile("boo.vb", "Dim a As Integer = 1", VbNetLanguage.LANGUAGE_KEY);
@@ -141,7 +144,7 @@ class SqvsRoslynSensorTests {
     underTest.execute(sensorContext);
 
     verify(analysisRequestHandler).analyze(argThat(fileNames -> fileNames.stream().anyMatch(f -> f.contains(fileName))),
-      anyList(), any());
+      anyList(), any(), any());
   }
 
   @ParameterizedTest
@@ -160,6 +163,7 @@ class SqvsRoslynSensorTests {
   void analyzeCsFile_callsHttpRequestWithCorrectParameters(boolean expectedShouldUseCsharpEnterprise) throws Exception {
     var fileName = "Foo.cs";
     mockInputFile(sensorContext, fileName, "Console.WriteLine(\"Hello World!\");");
+    mockAnalysisProperties(Map.of("sonar.cs.disableRazor", "true"));
     sensorContext.setActiveRules(new ActiveRulesBuilder()
       .addRule(new NewActiveRule.Builder().setRuleKey(RuleKey.of("foo", "bar")).build())
       .addRule(new NewActiveRule.Builder().setRuleKey(RuleKey.of(CSharpLanguage.REPOSITORY_KEY, "S123")).build())
@@ -170,6 +174,7 @@ class SqvsRoslynSensorTests {
 
     verify(analysisRequestHandler).analyze(argThat(fileNames -> fileNames.stream().anyMatch(file -> file.contains(fileName))),
       argThat(activeRules -> activeRules.size() == 1 && activeRules.stream().findFirst().get().ruleKey().rule().equals("S123")),
+      argThat(x -> x.entrySet().contains(Map.entry("sonar.cs.disableRazor", "true"))),
       argThat(x -> x.shouldUseCsharpEnterprise() == expectedShouldUseCsharpEnterprise && !x.shouldUseVbEnterprise()));
   }
 
@@ -178,6 +183,7 @@ class SqvsRoslynSensorTests {
   void analyzeVbNetFile_callsHttpRequestWithCorrectParameters(boolean expectedShouldUseVbEnterprise) throws Exception {
     var fileName = "Foo.vb";
     mockInputFile(sensorContext, fileName, "Console.WriteLine(\"Hello World!\");");
+    mockAnalysisProperties(Map.of("sonar.vbnet.disableRazor", "false"));
     sensorContext.setActiveRules(new ActiveRulesBuilder()
       .addRule(new NewActiveRule.Builder().setRuleKey(RuleKey.of("foo", "bar")).build())
       .addRule(new NewActiveRule.Builder().setRuleKey(RuleKey.of(VbNetLanguage.REPOSITORY_KEY, "S456")).build())
@@ -188,12 +194,14 @@ class SqvsRoslynSensorTests {
 
     verify(analysisRequestHandler).analyze(argThat(fileNames -> fileNames.stream().anyMatch(file -> file.contains(fileName))),
       argThat(activeRules -> activeRules.size() == 1 && activeRules.stream().findFirst().get().ruleKey().rule().equals("S456")),
+      argThat(x -> x.entrySet().contains(Map.entry("sonar.vbnet.disableRazor", "false"))),
       argThat(x -> x.shouldUseVbEnterprise() == expectedShouldUseVbEnterprise && !x.shouldUseCsharpEnterprise()));
   }
 
   @Test
   void analyzeCsAndVbNetFiles_callsHttpRequestWithCorrectParameters() throws Exception {
     mockInputFiles(sensorContext, "foo.cs", "boo.vb");
+    mockAnalysisProperties(Map.of("sonar.cs.disableRazor", "true"));
     sensorContext.setActiveRules(new ActiveRulesBuilder()
       .addRule(new NewActiveRule.Builder().setRuleKey(RuleKey.of("foo", "bar")).build())
       .addRule(new NewActiveRule.Builder().setRuleKey(RuleKey.of(CSharpLanguage.REPOSITORY_KEY, "S123")).build())
@@ -207,6 +215,7 @@ class SqvsRoslynSensorTests {
       fileNames.stream().anyMatch(file -> file.contains("foo.cs") || file.contains("boo.vb"))),
       argThat(activeRules -> activeRules.size() == 2 &&
         activeRules.stream().anyMatch(rule -> rule.ruleKey().rule().equals("S123") || rule.ruleKey().rule().contains("S456"))),
+      argThat(x -> x.entrySet().contains(Map.entry("sonar.cs.disableRazor", "true"))),
       argThat(x -> x.shouldUseCsharpEnterprise() && x.shouldUseVbEnterprise()));
   }
 
@@ -217,6 +226,7 @@ class SqvsRoslynSensorTests {
     when(analysisRequestHandler.analyze(
       argThat(x -> x.stream().anyMatch(file -> file.contains(csFile.filename()))),
       argThat(x -> x.stream().anyMatch(cs -> cs.ruleKey().rule().contains(csActiveRule.ruleKey().rule()))),
+      any(),
       argThat(x -> !x.shouldUseCsharpEnterprise() && !x.shouldUseVbEnterprise())))
         .thenReturn(List.of(csharpIssue));
 
@@ -234,6 +244,7 @@ class SqvsRoslynSensorTests {
     when(analysisRequestHandler.analyze(
       argThat(x -> x.stream().anyMatch(file -> file.contains(vbFile.filename()))),
       argThat(x -> x.stream().anyMatch(cs -> cs.ruleKey().rule().contains(vbActiveRule.ruleKey().rule()))),
+      any(),
       argThat(x -> !x.shouldUseCsharpEnterprise() && !x.shouldUseVbEnterprise())))
         .thenReturn(List.of(vbIssue));
 
@@ -251,6 +262,7 @@ class SqvsRoslynSensorTests {
     when(analysisRequestHandler.analyze(
       argThat(x -> x.stream().anyMatch(file -> file.contains(csFile.filename()))),
       argThat(x -> x.stream().anyMatch(cs -> cs.ruleKey().rule().contains(csActiveRule.ruleKey().rule()))),
+      any(),
       argThat(x -> !x.shouldUseCsharpEnterprise() && !x.shouldUseVbEnterprise())))
         .thenReturn(List.of(csIssueWithSecondaryLocations));
 
@@ -268,6 +280,7 @@ class SqvsRoslynSensorTests {
     when(analysisRequestHandler.analyze(
       argThat(x -> x.stream().anyMatch(file -> file.contains(vbFile.filename()))),
       argThat(x -> x.stream().anyMatch(cs -> cs.ruleKey().rule().contains(vbActiveRule.ruleKey().rule()))),
+      any(),
       argThat(x -> !x.shouldUseCsharpEnterprise() && !x.shouldUseVbEnterprise())))
         .thenReturn(List.of(vbIssueWithSecondaryLocations));
 
@@ -283,13 +296,12 @@ class SqvsRoslynSensorTests {
       .addRule(vbActiveRule)
       .build());
     var vbWrongIssue = mockRoslynIssueWithWrongLocation(vbActiveRule.ruleKey().rule(), VbNetLanguage.REPOSITORY_KEY, vbFile.filename());
-    when(analysisRequestHandler.analyze(any(), any(), any()))
+    when(analysisRequestHandler.analyze(any(), any(), any(), any()))
       .thenReturn(List.of(vbIssue, vbWrongIssue));
 
     underTest.execute(sensorContext);
 
     verifyExpectedRoslynIssue(vbIssue);
-
     assertThat(getLog(Level.ERROR).getRawMsg()).contains(String.format("Issue %s can not be saved due to ", vbWrongIssue.getRuleId()));
   }
 
@@ -411,6 +423,10 @@ class SqvsRoslynSensorTests {
   private void mockSettings(boolean shouldUseCsharpEnterprise, boolean shouldUseVbnetEnterprise) {
     when(instanceConfigurationProvider.getShouldUseCsharpEnterprise()).thenReturn(shouldUseCsharpEnterprise);
     when(instanceConfigurationProvider.getShouldUseVbEnterprise()).thenReturn(shouldUseVbnetEnterprise);
+  }
+
+  private void mockAnalysisProperties(Map<String, String> analysisProperties) {
+    when(analysisPropertiesProvider.getAnalysisProperties()).thenReturn(analysisProperties);
   }
 
   private LogAndArguments getLog(Level level) {

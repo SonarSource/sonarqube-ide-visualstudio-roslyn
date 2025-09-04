@@ -25,6 +25,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Collection;
+import java.util.Map;
 import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.scanner.ScannerSide;
@@ -42,9 +43,10 @@ public class HttpClientHandler {
     this.jsonRequestBuilder = jsonRequestBuilder;
   }
 
-  public HttpResponse<String> sendRequest(Collection<String> fileNames, Collection<ActiveRule> activeRules, AnalyzerInfoDto analyzerInfo) throws IOException, InterruptedException {
+  public HttpResponse<String> sendRequest(Collection<String> fileNames, Collection<ActiveRule> activeRules, Map<String, String> analysisProperties, AnalyzerInfoDto analyzerInfo)
+    throws IOException, InterruptedException {
     HttpClient client = HttpClient.newHttpClient();
-    var jsonPayload = jsonRequestBuilder.buildBody(fileNames, activeRules, analyzerInfo);
+    var jsonPayload = jsonRequestBuilder.buildBody(fileNames, activeRules, analysisProperties, analyzerInfo);
     var request = createRequest(jsonPayload);
     return client.send(request, HttpResponse.BodyHandlers.ofString());
   }

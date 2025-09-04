@@ -45,10 +45,13 @@ public class SqvsRoslynSensor implements Sensor {
   private static final Logger LOG = Loggers.get(SqvsRoslynSensor.class);
   private final HttpAnalysisRequestHandler httpRequestHandler;
   private final InstanceConfigurationProvider instanceConfigurationProvider;
+  private final AnalysisPropertiesProvider analysisPropertiesProvider;
 
-  public SqvsRoslynSensor(HttpAnalysisRequestHandler httpRequestHandler, InstanceConfigurationProvider instanceConfigurationProvider) {
+  public SqvsRoslynSensor(HttpAnalysisRequestHandler httpRequestHandler, InstanceConfigurationProvider instanceConfigurationProvider,
+    AnalysisPropertiesProvider analysisPropertiesProvider) {
     this.httpRequestHandler = httpRequestHandler;
     this.instanceConfigurationProvider = instanceConfigurationProvider;
+    this.analysisPropertiesProvider = analysisPropertiesProvider;
   }
 
   private static void handle(SensorContext context, RoslynIssue roslynIssue) {
@@ -158,8 +161,9 @@ public class SqvsRoslynSensor implements Sensor {
   private void analyze(SensorContext context, FilePredicate predicate) {
     var inputFiles = getFilePaths(context, predicate);
     var activeRules = getActiveRules(context);
+    var analysisProperties = analysisPropertiesProvider.getAnalysisProperties();
     var analyzerInfo = getAnalyzerInfo();
-    var roslynIssues = httpRequestHandler.analyze(inputFiles, activeRules, analyzerInfo);
+    var roslynIssues = httpRequestHandler.analyze(inputFiles, activeRules, analysisProperties, analyzerInfo);
     for (var roslynIssue : roslynIssues) {
       try {
         handle(context, roslynIssue);
@@ -185,4 +189,5 @@ public class SqvsRoslynSensor implements Sensor {
   private AnalyzerInfoDto getAnalyzerInfo() {
     return new AnalyzerInfoDto(instanceConfigurationProvider.getShouldUseCsharpEnterprise(), instanceConfigurationProvider.getShouldUseVbEnterprise());
   }
+
 }

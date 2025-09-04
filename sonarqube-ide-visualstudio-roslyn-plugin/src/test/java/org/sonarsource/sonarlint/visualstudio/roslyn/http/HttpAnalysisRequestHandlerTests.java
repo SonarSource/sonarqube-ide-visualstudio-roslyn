@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.net.http.HttpResponse;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -40,11 +41,12 @@ class HttpAnalysisRequestHandlerTests {
 
   private final Collection<String> fileNames = List.of("File1.cs", "File2.cs");
   private final Collection<ActiveRule> activeRules = List.of(mock(ActiveRule.class));
+  private final Map<String, String> analysisProperties = Map.of("sonar.cs.disableRazor", "true");
   private final AnalyzerInfoDto analyzerInfo = new AnalyzerInfoDto(false, false);
-  private HttpClientHandler httpClientHandler;
-  private HttpAnalysisRequestHandler analysisRequestHandler;
   @RegisterExtension
   private final LogTesterJUnit5 logTester = new LogTesterJUnit5();
+  private HttpClientHandler httpClientHandler;
+  private HttpAnalysisRequestHandler analysisRequestHandler;
 
   @BeforeEach
   void init() {
@@ -56,17 +58,17 @@ class HttpAnalysisRequestHandlerTests {
   void analyze_requestSucceeds_ReturnsIssues() throws IOException, InterruptedException {
     mockResponseWithOneIssue(200);
 
-    var result = analysisRequestHandler.analyze(fileNames, activeRules, analyzerInfo);
+    var result = analysisRequestHandler.analyze(fileNames, activeRules, analysisProperties, analyzerInfo);
 
     assertThat(result).hasSize(1);
-    verify(httpClientHandler).sendRequest(fileNames, activeRules, analyzerInfo);
+    verify(httpClientHandler).sendRequest(fileNames, activeRules, analysisProperties, analyzerInfo);
   }
 
   @Test
   void analyze_requestSucceedsWithEmptyBody_logsAndReturnsEmptyIssues() throws IOException, InterruptedException {
     mockResponse(200, "");
 
-    var result = analysisRequestHandler.analyze(fileNames, activeRules, analyzerInfo);
+    var result = analysisRequestHandler.analyze(fileNames, activeRules, analysisProperties, analyzerInfo);
 
     assertThat(result).isEmpty();
     assertThat(logTester.logs(LoggerLevel.WARN)).contains("No body received from the server.");
@@ -76,19 +78,19 @@ class HttpAnalysisRequestHandlerTests {
   void analyze_requestFails_returnsEmptyIssues() throws IOException, InterruptedException {
     mockResponseWithOneIssue(404);
 
-    var result = analysisRequestHandler.analyze(fileNames, activeRules, analyzerInfo);
+    var result = analysisRequestHandler.analyze(fileNames, activeRules, analysisProperties, analyzerInfo);
 
     assertThat(result).isEmpty();
-    verify(httpClientHandler).sendRequest(fileNames, activeRules, analyzerInfo);
+    verify(httpClientHandler).sendRequest(fileNames, activeRules, analysisProperties, analyzerInfo);
     assertThat(logTester.logs(LoggerLevel.ERROR)).contains("Response from server is 404.");
   }
 
   @Test
   void analyze_throws_logsAndReturnsEmptyIssues() throws IOException, InterruptedException {
     var exceptionMessage = "message";
-    when(httpClientHandler.sendRequest(fileNames, activeRules, analyzerInfo)).thenThrow(new RuntimeException(exceptionMessage));
+    when(httpClientHandler.sendRequest(fileNames, activeRules, analysisProperties, analyzerInfo)).thenThrow(new RuntimeException(exceptionMessage));
 
-    var thrown = assertThrows(IllegalStateException.class, () -> analysisRequestHandler.analyze(fileNames, activeRules, analyzerInfo));
+    var thrown = assertThrows(IllegalStateException.class, () -> analysisRequestHandler.analyze(fileNames, activeRules, analysisProperties, analyzerInfo));
 
     assertThat(thrown).hasMessageContaining("Response crashed due to: " + exceptionMessage);
   }
@@ -101,6 +103,6 @@ class HttpAnalysisRequestHandlerTests {
     var mockResponse = mock(HttpResponse.class);
     when(mockResponse.statusCode()).thenReturn(statusCode);
     when(mockResponse.body()).thenReturn(body);
-    when(httpClientHandler.sendRequest(fileNames, activeRules, analyzerInfo)).thenReturn(mockResponse);
+    when(httpClientHandler.sendRequest(fileNames, activeRules, analysisProperties, analyzerInfo)).thenReturn(mockResponse);
   }
 }
