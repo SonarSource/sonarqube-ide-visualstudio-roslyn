@@ -32,8 +32,6 @@ import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.SensorDescriptor;
 import org.sonar.api.batch.sensor.issue.NewIssue;
 import org.sonar.api.batch.sensor.issue.NewIssueLocation;
-import org.sonar.api.batch.sensor.issue.fix.NewInputFileEdit;
-import org.sonar.api.batch.sensor.issue.fix.NewQuickFix;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
@@ -79,10 +77,13 @@ public class SqvsRoslynSensor implements Sensor {
     if (roslynIssue.getQuickFixes().isEmpty()){
       return;
     }
-
-    newIssue.setQuickFixAvailable(true);
     var filePath = Paths.get(roslynIssue.getPrimaryLocation().getFilePath());
     var file = findInputFile(context, filePath);
+    if (file == null){
+      return;
+    }
+
+    newIssue.setQuickFixAvailable(true);
     for (RoslynIssueQuickFix quickFix : roslynIssue.getQuickFixes()) {
       var newQuickFix = newIssue.newQuickFix();
       newQuickFix.message(quickFix.getValue());

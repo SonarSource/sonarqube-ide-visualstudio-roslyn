@@ -453,9 +453,9 @@ class SqvsRoslynSensorTests {
             var expectedQuickFix = expectedIssue.getQuickFixes().get(i);
             assertThat(actualQuickFix.getMessage()).isEqualTo(expectedQuickFix.getValue());
             assertThat(actualQuickFix.getInputFileEdits()).hasSize(1);
-            assertThat(actualQuickFix.getInputFileEdits().get(0).getInputFile().toString()).isEqualTo(expectedIssue.getPrimaryLocation().getFilePath());
+            assertThat(actualQuickFix.getInputFileEdits().get(0).getInputFile()).hasToString(expectedIssue.getPrimaryLocation().getFilePath());
             assertThat(actualQuickFix.getInputFileEdits().get(0).getTextEdits()).hasSize(1);
-            assertThat(actualQuickFix.getInputFileEdits().get(0).getTextEdits().get(0).getNewText()).isEqualTo("");
+            assertThat(actualQuickFix.getInputFileEdits().get(0).getTextEdits().get(0).getNewText()).isEmpty();
             assertThat(actualQuickFix.getInputFileEdits().get(0).getTextEdits().get(0).getTextRange()).isEqualTo(new DefaultTextRange(new DefaultTextPointer(0, 0), new DefaultTextPointer(0, 0)));
         }
     }
