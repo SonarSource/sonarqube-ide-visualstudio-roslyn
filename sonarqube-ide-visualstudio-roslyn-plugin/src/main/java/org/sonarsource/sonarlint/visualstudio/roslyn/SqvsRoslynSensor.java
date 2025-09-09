@@ -39,6 +39,7 @@ import org.sonarsource.sonarlint.visualstudio.roslyn.http.AnalyzerInfoDto;
 import org.sonarsource.sonarlint.visualstudio.roslyn.http.HttpAnalysisRequestHandler;
 import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssue;
 import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssueLocation;
+import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssueQuickFix;
 
 public class SqvsRoslynSensor implements Sensor {
 
@@ -66,10 +67,19 @@ public class SqvsRoslynSensor implements Sensor {
           .forRule(ruleKey)
           .at(createLocation(newIssue, roslynIssue.getPrimaryLocation(), diagInputFile));
         handleSecondaryLocations(context, roslynIssue, newIssue);
-        // TODO by https://sonarsource.atlassian.net/browse/SLVS-2492 handle quickfixes once they are returned from the server
-        /* handleQuickFixes(context, roslynIssue, newIssue); */
+        handleQuickFixes(roslynIssue, newIssue);
         newIssue.save();
       }
+    }
+  }
+
+  private static void handleQuickFixes(RoslynIssue roslynIssue, NewIssue newIssue) {
+    for (RoslynIssueQuickFix quickFix : roslynIssue.getQuickFixes()) {
+      var newQuickFix = newIssue.newQuickFix();
+      // quickfixes are lazily evaluated on the client (VS) side,
+      // here we only pass the value that is then mapped back to the quickfix object by the client
+      newQuickFix.message(quickFix.getValue());
+      newIssue.addQuickFix(newQuickFix);
     }
   }
 
@@ -124,39 +134,6 @@ public class SqvsRoslynSensor implements Sensor {
       context.fileSystem().predicates().hasExtension(CSharpLanguage.RAZOR_EXTENSION),
       context.fileSystem().predicates().hasExtension(VbNetLanguage.RAZOR_EXTENSION));
   }
-
-  // TODO by https://sonarsource.atlassian.net/browse/SLVS-2492 handle quickfixes once they are returned from the server
-  /*
-   * private static void handleQuickFixes(SensorContext context, RoslynIssue diag, NewIssue newIssue) {
-   * var quickFixes = diag.getQuickFixes();
-   * if (quickFixes != null && quickFixes.length > 0) {
-   * newIssue.setQuickFixAvailable(true);
-   * for (var quickFix : quickFixes) {
-   * handleQuickFix(context, quickFix, newIssue);
-   * }
-   * }
-   * }
-   *
-   * static void handleQuickFix(SensorContext context, QuickFix quickFix, NewIssue newIssue) {
-   * var newQuickFix = newIssue.newQuickFix();
-   * newQuickFix.message(quickFix.getMessage());
-   * for (Fix fix : quickFix.getFixes()) {
-   * var fixInputFile = findInputFile(context, Paths.get(fix.getFilename()));
-   * if (fixInputFile != null) {
-   * var newInputFileEdit = newQuickFix.newInputFileEdit()
-   * .on(fixInputFile);
-   * for (QuickFixEdit edit : fix.getEdits()) {
-   * var newTextEdit = newInputFileEdit.newTextEdit()
-   * .at(fixInputFile.newRange(edit.getStartLine(), edit.getStartColumn() - 1, edit.getEndLine(), edit.getEndColumn() - 1))
-   * .withNewText(edit.getNewText());
-   * newInputFileEdit.addTextEdit(newTextEdit);
-   * }
-   * newQuickFix.addInputFileEdit(newInputFileEdit);
-   * }
-   * }
-   * newIssue.addQuickFix(newQuickFix);
-   * }
-   */
 
   private void analyze(SensorContext context, FilePredicate predicate) {
     var inputFiles = getFilePaths(context, predicate);

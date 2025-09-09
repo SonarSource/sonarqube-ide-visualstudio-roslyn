@@ -50,19 +50,12 @@ import org.sonar.api.rule.RuleKey;
 import org.sonar.api.testfixtures.log.LogAndArguments;
 import org.sonar.api.testfixtures.log.LogTesterJUnit5;
 import org.sonarsource.sonarlint.visualstudio.roslyn.http.HttpAnalysisRequestHandler;
-import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssue;
-import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssueFlow;
-import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssueLocation;
-import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssueTextRange;
+import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.argThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class SqvsRoslynSensorTests {
   private final NewActiveRule csActiveRule = new NewActiveRule.Builder().setRuleKey(RuleKey.of(CSharpLanguage.REPOSITORY_KEY, "S123")).build();
@@ -272,6 +265,11 @@ class SqvsRoslynSensorTests {
   }
 
   @Test
+  void analyzeCs_handleQuickFixes() {
+    testQuickFixes(csFile, csActiveRule, CSharpLanguage.REPOSITORY_KEY);
+  }
+
+  @Test
   void analyzeVb_handleSecondaryLocations() {
     sensorContext.fileSystem().add(vbFile);
     sensorContext.fileSystem().add(vbFile2);
@@ -290,6 +288,11 @@ class SqvsRoslynSensorTests {
   }
 
   @Test
+  void analyzeVb_handleQuickFixes() {
+    testQuickFixes(vbFile, vbActiveRule, VbNetLanguage.REPOSITORY_KEY);
+  }
+
+  @Test
   void analyze_handleOneIssueThrowsException_logsAndShowsOtherIssues() {
     sensorContext.fileSystem().add(vbFile);
     sensorContext.setActiveRules(new ActiveRulesBuilder()
@@ -303,6 +306,26 @@ class SqvsRoslynSensorTests {
 
     verifyExpectedRoslynIssue(vbIssue);
     assertThat(getLog(Level.ERROR).getRawMsg()).contains(String.format("Issue %s can not be saved due to ", vbWrongIssue.getRuleId()));
+  }
+
+  private void testQuickFixes(InputFile testFile, NewActiveRule activeRule, String languageRepositoryKey) {
+    var mockNewIssue = new MockSonarLintIssue();
+    sensorContext = spy(sensorContext);
+    doReturn(mockNewIssue).when(sensorContext).newIssue();
+    var testFileName = testFile.filename();
+    sensorContext.fileSystem().add(testFile);
+    sensorContext.setActiveRules(new ActiveRulesBuilder().addRule(activeRule).build());
+    var csIssueWithQuickFix = mockRoslynIssueWithQuickFixes(activeRule.ruleKey().rule(), languageRepositoryKey, testFileName, "Custom QuickFix value provided by RoslynIssue");
+    when(analysisRequestHandler.analyze(
+      argThat(x -> x.stream().anyMatch(file -> file.contains(testFileName))),
+      argThat(x -> x.stream().anyMatch(cs -> cs.ruleKey().rule().contains(activeRule.ruleKey().rule()))),
+      any(),
+      argThat(x -> !x.shouldUseCsharpEnterprise() && !x.shouldUseVbEnterprise())))
+        .thenReturn(List.of(csIssueWithQuickFix));
+
+    underTest.execute(sensorContext);
+
+    verifyExpectedQuickFixes(csIssueWithQuickFix, mockNewIssue);
   }
 
   private void mockInputFiles(SensorContextTester sensorContextTester, String... fileNames) throws IOException {
@@ -377,6 +400,18 @@ class SqvsRoslynSensorTests {
     return roslynIssue;
   }
 
+  private RoslynIssue mockRoslynIssueWithQuickFixes(String ruleKey, String repository, String filePath, String quickFixValue) {
+    var roslynIssue = mockRoslynIssue(ruleKey, repository, filePath);
+
+    var quickFix = mock(RoslynIssueQuickFix.class);
+    when(quickFix.getValue()).thenReturn(quickFixValue);
+
+    var quickFixes = List.of(quickFix);
+    when(roslynIssue.getQuickFixes()).thenReturn(quickFixes);
+
+    return roslynIssue;
+  }
+
   private RoslynIssue mockRoslynIssueWithWrongLocation(String ruleKey, String repository, String filePath) {
     var roslynIssue = mockRoslynIssue(ruleKey, repository, filePath);
     var primaryLocation = mockIssueLocation(vbFile.filename());
@@ -404,6 +439,16 @@ class SqvsRoslynSensorTests {
       var expectedLocation = expectedLocations.stream().filter(x -> x.getFilePath().equals(location.inputComponent().toString())).findFirst().orElse(null);
       verifyExpectedLocation(expectedLocation, location);
     }
+  }
+
+  private void verifyExpectedQuickFixes(RoslynIssue expectedIssue, MockSonarLintIssue actualIssue) {
+    assertThat(actualIssue.getQuickFixes()).hasSize(expectedIssue.getQuickFixes().size());
+    for (int i = 0; i < actualIssue.getQuickFixes().size(); i++) {
+      var actualQuickFix = actualIssue.getQuickFixes().get(i);
+      var expectedQuickFix = expectedIssue.getQuickFixes().get(i);
+      assertThat(actualQuickFix.getMessage()).isEqualTo(expectedQuickFix.getValue());
+      assertThat(actualQuickFix.getInputFileEdits()).isEmpty();
+     }
   }
 
   private void verifyExpectedLocation(@Nullable RoslynIssueLocation expectedIssueLocation, IssueLocation actualIssueLocation) {
