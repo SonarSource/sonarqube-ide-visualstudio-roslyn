@@ -39,8 +39,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.event.Level;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.TextRange;
-import org.sonar.api.batch.fs.internal.DefaultTextPointer;
-import org.sonar.api.batch.fs.internal.DefaultTextRange;
 import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
 import org.sonar.api.batch.rule.internal.ActiveRulesBuilder;
 import org.sonar.api.batch.rule.internal.NewActiveRule;
@@ -291,7 +289,6 @@ class SqvsRoslynSensorTests {
 
   @Test
   void analyzeVb_handleQuickFixes() {
-
     testQuickFixes(vbFile, vbActiveRule, VbNetLanguage.REPOSITORY_KEY);
   }
 
@@ -315,9 +312,7 @@ class SqvsRoslynSensorTests {
     var mockNewIssue = new MockSonarLintIssue();
     sensorContext = spy(sensorContext);
     doReturn(mockNewIssue).when(sensorContext).newIssue();
-    testFile = spy(testFile);
     var testFileName = testFile.filename();
-    doReturn(new DefaultTextRange(new DefaultTextPointer(0, 0), new DefaultTextPointer(0, 0))).when(testFile).newRange(0, 0, 0, 0);
     sensorContext.fileSystem().add(testFile);
     sensorContext.setActiveRules(new ActiveRulesBuilder().addRule(activeRule).build());
     var csIssueWithQuickFix = mockRoslynIssueWithQuickFixes(activeRule.ruleKey().rule(), languageRepositoryKey, testFileName, "Custom QuickFix value provided by RoslynIssue");
@@ -452,13 +447,8 @@ class SqvsRoslynSensorTests {
       var actualQuickFix = actualIssue.getQuickFixes().get(i);
       var expectedQuickFix = expectedIssue.getQuickFixes().get(i);
       assertThat(actualQuickFix.getMessage()).isEqualTo(expectedQuickFix.getValue());
-      assertThat(actualQuickFix.getInputFileEdits()).hasSize(1);
-      assertThat(actualQuickFix.getInputFileEdits().get(0).getInputFile()).hasToString(expectedIssue.getPrimaryLocation().getFilePath());
-      assertThat(actualQuickFix.getInputFileEdits().get(0).getTextEdits()).hasSize(1);
-      assertThat(actualQuickFix.getInputFileEdits().get(0).getTextEdits().get(0).getNewText()).isEmpty();
-      assertThat(actualQuickFix.getInputFileEdits().get(0).getTextEdits().get(0).getTextRange())
-        .isEqualTo(new DefaultTextRange(new DefaultTextPointer(0, 0), new DefaultTextPointer(0, 0)));
-    }
+      assertThat(actualQuickFix.getInputFileEdits()).isEmpty();
+     }
   }
 
   private void verifyExpectedLocation(@Nullable RoslynIssueLocation expectedIssueLocation, IssueLocation actualIssueLocation) {

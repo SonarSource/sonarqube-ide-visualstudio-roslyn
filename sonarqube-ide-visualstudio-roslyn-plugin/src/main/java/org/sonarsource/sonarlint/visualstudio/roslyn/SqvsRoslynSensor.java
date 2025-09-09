@@ -67,30 +67,22 @@ public class SqvsRoslynSensor implements Sensor {
           .forRule(ruleKey)
           .at(createLocation(newIssue, roslynIssue.getPrimaryLocation(), diagInputFile));
         handleSecondaryLocations(context, roslynIssue, newIssue);
-        handleQuickFixes(context, roslynIssue, newIssue);
+        handleQuickFixes(roslynIssue, newIssue);
         newIssue.save();
       }
     }
   }
 
-  private static void handleQuickFixes(SensorContext context, RoslynIssue roslynIssue, NewIssue newIssue) {
+  private static void handleQuickFixes(RoslynIssue roslynIssue, NewIssue newIssue) {
     if (roslynIssue.getQuickFixes().isEmpty()) {
       return;
     }
-    var filePath = Paths.get(roslynIssue.getPrimaryLocation().getFilePath());
-    var file = findInputFile(context, filePath);
-    if (file == null) {
-      return;
-    }
 
-    newIssue.setQuickFixAvailable(true);
     for (RoslynIssueQuickFix quickFix : roslynIssue.getQuickFixes()) {
       var newQuickFix = newIssue.newQuickFix();
+      // quickfixes are lazily evaluated on the client (VS) side,
+      // here we only pass the value that is then mapped back to the quickfix object by the client
       newQuickFix.message(quickFix.getValue());
-      var newInputFileEdit = newQuickFix.newInputFileEdit().on(file);
-      var newTextEdit = newInputFileEdit.newTextEdit().at(file.newRange(0, 0, 0, 0)).withNewText("");
-      newInputFileEdit.addTextEdit(newTextEdit);
-      newQuickFix.addInputFileEdit(newInputFileEdit);
       newIssue.addQuickFix(newQuickFix);
     }
   }
