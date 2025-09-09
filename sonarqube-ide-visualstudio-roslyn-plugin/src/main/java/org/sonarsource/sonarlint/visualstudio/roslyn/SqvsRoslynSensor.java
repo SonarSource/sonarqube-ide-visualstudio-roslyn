@@ -74,12 +74,12 @@ public class SqvsRoslynSensor implements Sensor {
   }
 
   private static void handleQuickFixes(SensorContext context, RoslynIssue roslynIssue, NewIssue newIssue) {
-    if (roslynIssue.getQuickFixes().isEmpty()){
+    if (roslynIssue.getQuickFixes().isEmpty()) {
       return;
     }
     var filePath = Paths.get(roslynIssue.getPrimaryLocation().getFilePath());
     var file = findInputFile(context, filePath);
-    if (file == null){
+    if (file == null) {
       return;
     }
 

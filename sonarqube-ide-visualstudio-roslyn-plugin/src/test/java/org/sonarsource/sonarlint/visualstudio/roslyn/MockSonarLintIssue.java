@@ -38,171 +38,170 @@ import java.util.List;
 // copied from https://github.com/SonarSource/sonarlint-omnisharp/blob/3c584bb30ff7bece45e7399699befa30c58b3605/omnisharp-plugin/src/test/java/org/sonarsource/sonarlint/omnisharp/OmnisharpSensorTests.java#L562
 public class MockSonarLintIssue implements NewIssue {
 
-    private final List<MockSonarLintQuickFix> quickFixes = new ArrayList<>();
+  private final List<MockSonarLintQuickFix> quickFixes = new ArrayList<>();
+
+  @Override
+  public NewIssue forRule(RuleKey ruleKey) {
+    return this;
+  }
+
+  @Override
+  public NewIssue gap(@Nullable Double aDouble) {
+    return this;
+  }
+
+  @Override
+  public NewIssue overrideSeverity(@Nullable Severity severity) {
+    return this;
+  }
+
+  @Override
+  public NewIssue overrideImpact(SoftwareQuality softwareQuality, org.sonar.api.issue.impact.Severity severity) {
+    return null;
+  }
+
+  @Override
+  public NewIssue at(NewIssueLocation newIssueLocation) {
+    return this;
+  }
+
+  @Override
+  public NewIssue addLocation(NewIssueLocation newIssueLocation) {
+    return this;
+  }
+
+  @Override
+  public NewIssue setQuickFixAvailable(boolean b) {
+    return this;
+  }
+
+  @Override
+  public NewIssue addFlow(Iterable<NewIssueLocation> iterable) {
+    return this;
+  }
+
+  @Override
+  public NewIssue addFlow(Iterable<NewIssueLocation> iterable, NewIssue.FlowType flowType, @Nullable String s) {
+    return this;
+  }
+
+  @Override
+  public NewIssueLocation newLocation() {
+    return new DefaultIssueLocation();
+  }
+
+  @Override
+  public void save() {
+    // do nothing
+  }
+
+  @Override
+  public NewIssue setRuleDescriptionContextKey(@Nullable String s) {
+    return this;
+  }
+
+  @Override
+  public NewIssue setCodeVariants(@Nullable Iterable<String> iterable) {
+    return null;
+  }
+
+  @Override
+  public MockSonarLintQuickFix newQuickFix() {
+    return new MockSonarLintQuickFix();
+  }
+
+  @Override
+  public NewIssue addQuickFix(org.sonar.api.batch.sensor.issue.fix.NewQuickFix newQuickFix) {
+    quickFixes.add((MockSonarLintQuickFix) newQuickFix);
+    return this;
+  }
+
+  public List<MockSonarLintQuickFix> getQuickFixes() {
+    return quickFixes;
+  }
+
+  public static class MockSonarLintQuickFix implements NewQuickFix {
+    private String message;
+    private final List<MockSonarLintInputFileEdit> inputFileEdits = new ArrayList<>();
 
     @Override
-    public NewIssue forRule(RuleKey ruleKey) {
+    public NewQuickFix message(String message) {
+      this.message = message;
+      return this;
+    }
+
+    @Override
+    public NewInputFileEdit newInputFileEdit() {
+      return new MockSonarLintInputFileEdit();
+    }
+
+    @Override
+    public NewQuickFix addInputFileEdit(NewInputFileEdit newInputFileEdit) {
+      inputFileEdits.add((MockSonarLintInputFileEdit) newInputFileEdit);
+      return this;
+    }
+
+    public String getMessage() {
+      return message;
+    }
+
+    public List<MockSonarLintInputFileEdit> getInputFileEdits() {
+      return inputFileEdits;
+    }
+
+    public static class MockSonarLintInputFileEdit implements NewInputFileEdit {
+      private InputFile inputFile;
+      private final List<MockSonarLintTextEdit> textEdits = new ArrayList<>();
+
+      @Override
+      public NewInputFileEdit on(InputFile inputFile) {
+        this.inputFile = inputFile;
         return this;
-    }
+      }
 
-    @Override
-    public NewIssue gap(@Nullable Double aDouble) {
+      @Override
+      public NewTextEdit newTextEdit() {
+        return new MockSonarLintTextEdit();
+      }
+
+      @Override
+      public NewInputFileEdit addTextEdit(NewTextEdit newTextEdit) {
+        textEdits.add((MockSonarLintTextEdit) newTextEdit);
         return this;
-    }
+      }
 
-    @Override
-    public NewIssue overrideSeverity(@Nullable Severity severity) {
-        return this;
-    }
+      public InputFile getInputFile() {
+        return inputFile;
+      }
 
-    @Override
-    public NewIssue overrideImpact(SoftwareQuality softwareQuality, org.sonar.api.issue.impact.Severity severity) {
-        return null;
-    }
+      public List<MockSonarLintTextEdit> getTextEdits() {
+        return textEdits;
+      }
 
-    @Override
-    public NewIssue at(NewIssueLocation newIssueLocation) {
-        return this;
-    }
-
-    @Override
-    public NewIssue addLocation(NewIssueLocation newIssueLocation) {
-        return this;
-    }
-
-    @Override
-    public NewIssue setQuickFixAvailable(boolean b) {
-        return this;
-    }
-
-    @Override
-    public NewIssue addFlow(Iterable<NewIssueLocation> iterable) {
-        return this;
-    }
-
-    @Override
-    public NewIssue addFlow(Iterable<NewIssueLocation> iterable, NewIssue.FlowType flowType, @Nullable String s) {
-        return this;
-    }
-
-    @Override
-    public NewIssueLocation newLocation() {
-        return new DefaultIssueLocation();
-    }
-
-    @Override
-    public void save() {
-        // do nothing
-    }
-
-    @Override
-    public NewIssue setRuleDescriptionContextKey(@Nullable String s) {
-        return this;
-    }
-
-    @Override
-    public NewIssue setCodeVariants(@Nullable Iterable<String> iterable) {
-        return null;
-    }
-
-    @Override
-    public MockSonarLintQuickFix newQuickFix() {
-        return new MockSonarLintQuickFix();
-    }
-
-    @Override
-    public NewIssue addQuickFix(org.sonar.api.batch.sensor.issue.fix.NewQuickFix newQuickFix) {
-        quickFixes.add((MockSonarLintQuickFix) newQuickFix);
-        return this;
-    }
-
-    public List<MockSonarLintQuickFix> getQuickFixes() {
-        return quickFixes;
-    }
-
-
-    public static class MockSonarLintQuickFix implements NewQuickFix {
-        private String message;
-        private final List<MockSonarLintInputFileEdit> inputFileEdits = new ArrayList<>();
+      public static class MockSonarLintTextEdit implements NewTextEdit {
+        private TextRange textRange;
+        private String newText;
 
         @Override
-        public NewQuickFix message(String message) {
-            this.message = message;
-            return this;
+        public NewTextEdit at(TextRange textRange) {
+          this.textRange = textRange;
+          return this;
         }
 
         @Override
-        public NewInputFileEdit newInputFileEdit() {
-            return new MockSonarLintInputFileEdit();
+        public NewTextEdit withNewText(String newText) {
+          this.newText = newText;
+          return this;
         }
 
-        @Override
-        public NewQuickFix addInputFileEdit(NewInputFileEdit newInputFileEdit) {
-            inputFileEdits.add((MockSonarLintInputFileEdit) newInputFileEdit);
-            return this;
+        public TextRange getTextRange() {
+          return textRange;
         }
 
-        public String getMessage() {
-            return message;
+        public String getNewText() {
+          return newText;
         }
-
-        public List<MockSonarLintInputFileEdit> getInputFileEdits() {
-            return inputFileEdits;
-        }
-
-        public static class MockSonarLintInputFileEdit implements NewInputFileEdit {
-            private InputFile inputFile;
-            private final List<MockSonarLintTextEdit> textEdits = new ArrayList<>();
-
-            @Override
-            public NewInputFileEdit on(InputFile inputFile) {
-                this.inputFile = inputFile;
-                return this;
-            }
-
-            @Override
-            public NewTextEdit newTextEdit() {
-                return new MockSonarLintTextEdit();
-            }
-
-            @Override
-            public NewInputFileEdit addTextEdit(NewTextEdit newTextEdit) {
-                textEdits.add((MockSonarLintTextEdit) newTextEdit);
-                return this;
-            }
-
-            public InputFile getInputFile() {
-                return inputFile;
-            }
-
-            public List<MockSonarLintTextEdit> getTextEdits() {
-                return textEdits;
-            }
-
-            public static class MockSonarLintTextEdit implements NewTextEdit {
-                private TextRange textRange;
-                private String newText;
-
-                @Override
-                public NewTextEdit at(TextRange textRange) {
-                    this.textRange = textRange;
-                    return this;
-                }
-
-                @Override
-                public NewTextEdit withNewText(String newText) {
-                    this.newText = newText;
-                    return this;
-                }
-
-                public TextRange getTextRange() {
-                    return textRange;
-                }
-
-                public String getNewText() {
-                    return newText;
-                }
-            }
-        }
+      }
     }
+  }
 }
