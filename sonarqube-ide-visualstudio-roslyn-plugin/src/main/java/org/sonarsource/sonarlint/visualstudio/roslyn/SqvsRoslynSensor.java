@@ -74,10 +74,6 @@ public class SqvsRoslynSensor implements Sensor {
   }
 
   private static void handleQuickFixes(RoslynIssue roslynIssue, NewIssue newIssue) {
-    if (roslynIssue.getQuickFixes().isEmpty()) {
-      return;
-    }
-
     for (RoslynIssueQuickFix quickFix : roslynIssue.getQuickFixes()) {
       var newQuickFix = newIssue.newQuickFix();
       // quickfixes are lazily evaluated on the client (VS) side,
