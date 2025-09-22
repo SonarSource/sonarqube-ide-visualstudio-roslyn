@@ -37,15 +37,16 @@ import org.sonarsource.sonarlint.visualstudio.roslyn.SqvsRoslynPluginPropertyDef
 public class HttpClientHandler {
   private final SensorContext context;
   private final JsonRequestBuilder jsonRequestBuilder;
+  private final HttpClient client;
 
   public HttpClientHandler(SensorContext context, JsonRequestBuilder jsonRequestBuilder) {
     this.context = context;
     this.jsonRequestBuilder = jsonRequestBuilder;
+    client = HttpClient.newHttpClient();
   }
 
   public HttpResponse<String> sendRequest(Collection<String> fileNames, Collection<ActiveRule> activeRules, Map<String, String> analysisProperties, AnalyzerInfoDto analyzerInfo)
     throws IOException, InterruptedException {
-    HttpClient client = HttpClient.newHttpClient();
     var jsonPayload = jsonRequestBuilder.buildBody(fileNames, activeRules, analysisProperties, analyzerInfo);
     var request = createRequest(jsonPayload);
     return client.send(request, HttpResponse.BodyHandlers.ofString());
