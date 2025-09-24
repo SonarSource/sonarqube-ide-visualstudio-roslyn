@@ -19,15 +19,31 @@
  */
 package org.sonarsource.sonarlint.visualstudio.roslyn.http;
 
-import com.google.gson.annotations.SerializedName;
-import java.util.Collection;
-import java.util.Map;
+import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
-public record AnalysisRequestDto(
-  @SerializedName("FileNames") Collection<String> fileNames,
-  @SerializedName("ActiveRules") Collection<ActiveRuleDto> activeRules,
-  @SerializedName("AnalysisProperties") Map<String, String> analysisProperties,
-  @SerializedName("AnalyzerInfo") AnalyzerInfoDto analyzerInfo,
-  @SerializedName("AnalysisId") java.util.UUID analysisId) {
+import java.net.http.HttpClient;
+
+class HttpClientProviderTest {
+
+  @Test
+  void getHttpClient_returnsTheSameInstanceOfClient() {
+    var underTest = new HttpClientProvider();
+
+    HttpClient httpClient1 = underTest.getHttpClient();
+    HttpClient httpClient2 = underTest.getHttpClient();
+
+    assertThat(httpClient1).isNotNull().isSameAs(httpClient2);
+  }
+
+  @Test
+  void getHttpClient_httpClientInstanceIsNotStatic() {
+    var underTest1 = new HttpClientProvider();
+    var underTest2 = new HttpClientProvider();
+
+    HttpClient httpClient1 = underTest1.getHttpClient();
+    HttpClient httpClient2 = underTest2.getHttpClient();
+
+    assertThat(httpClient1).isNotNull().isNotSameAs(httpClient2);
+  }
 }
-

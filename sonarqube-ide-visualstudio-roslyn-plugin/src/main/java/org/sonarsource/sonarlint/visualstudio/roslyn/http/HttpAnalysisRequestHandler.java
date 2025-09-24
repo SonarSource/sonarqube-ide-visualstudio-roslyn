@@ -24,6 +24,8 @@ import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
+import java.util.UUID;
+
 import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.scanner.ScannerSide;
 import org.sonar.api.utils.log.Logger;
@@ -41,10 +43,15 @@ public class HttpAnalysisRequestHandler {
     this.httpClientFactory = httpClientFactory;
   }
 
-  public Collection<RoslynIssue> analyze(Collection<String> fileNames, Collection<ActiveRule> activeRules, Map<String, String> analysisProperties, AnalyzerInfoDto analyzerInfo) {
+  public Collection<RoslynIssue> analyze(
+    Collection<String> fileNames,
+    Collection<ActiveRule> activeRules,
+    Map<String, String> analysisProperties,
+    AnalyzerInfoDto analyzerInfo,
+    UUID analysisId) {
     Collection<RoslynIssue> roslynIssues = new ArrayList<>();
     try {
-      var response = httpClientFactory.sendRequest(fileNames, activeRules, analysisProperties, analyzerInfo);
+      var response = httpClientFactory.sendAnalyzeRequest(fileNames, activeRules, analysisProperties, analyzerInfo, analysisId);
       if (response.statusCode() != HttpURLConnection.HTTP_OK) {
         LOG.error("Response from server is {}.", response.statusCode());
         return roslynIssues;
@@ -65,5 +72,19 @@ public class HttpAnalysisRequestHandler {
     }
 
     return roslynIssues;
+  }
+
+  public void cancelAnalysis(UUID analysisId) {
+    var requestFuture = httpClientFactory.sendCancelRequest(analysisId);
+
+    requestFuture.exceptionally(e -> {
+      LOG.error("Failed to cancel analysis due to: {}", e.getMessage(), e);
+      return null;
+    }).thenApply(response -> {
+      if (response.statusCode() != HttpURLConnection.HTTP_OK) {
+        LOG.error("Response from cancel request is {}.", response.statusCode());
+      }
+      return null;
+    });
   }
 }

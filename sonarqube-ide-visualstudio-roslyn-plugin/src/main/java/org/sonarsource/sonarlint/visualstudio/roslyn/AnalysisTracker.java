@@ -17,17 +17,13 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.visualstudio.roslyn.http;
+package org.sonarsource.sonarlint.visualstudio.roslyn;
 
-import com.google.gson.annotations.SerializedName;
-import java.util.Collection;
-import java.util.Map;
+import java.io.Closeable;
+import java.util.UUID;
 
-public record AnalysisRequestDto(
-  @SerializedName("FileNames") Collection<String> fileNames,
-  @SerializedName("ActiveRules") Collection<ActiveRuleDto> activeRules,
-  @SerializedName("AnalysisProperties") Map<String, String> analysisProperties,
-  @SerializedName("AnalyzerInfo") AnalyzerInfoDto analyzerInfo,
-  @SerializedName("AnalysisId") java.util.UUID analysisId) {
+public interface AnalysisTracker extends Closeable {
+  UUID getAnalysisId();
+
+  boolean cancelIfNeeded();
 }
-

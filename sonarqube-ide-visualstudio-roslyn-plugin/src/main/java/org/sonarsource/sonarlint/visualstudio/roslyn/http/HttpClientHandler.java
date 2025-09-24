@@ -21,11 +21,13 @@ package org.sonarsource.sonarlint.visualstudio.roslyn.http;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Collection;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+
 import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.scanner.ScannerSide;
@@ -37,26 +39,37 @@ import org.sonarsource.sonarlint.visualstudio.roslyn.SqvsRoslynPluginPropertyDef
 public class HttpClientHandler {
   private final SensorContext context;
   private final JsonRequestBuilder jsonRequestBuilder;
-  private final HttpClient client;
+  private final java.net.http.HttpClient httpClient;
 
-  public HttpClientHandler(SensorContext context, JsonRequestBuilder jsonRequestBuilder) {
+  public HttpClientHandler(SensorContext context, JsonRequestBuilder jsonRequestBuilder, HttpClientProvider httpClientProvider) {
     this.context = context;
     this.jsonRequestBuilder = jsonRequestBuilder;
-    client = HttpClient.newHttpClient();
+    this.httpClient = httpClientProvider.getHttpClient();
   }
 
-  public HttpResponse<String> sendRequest(Collection<String> fileNames, Collection<ActiveRule> activeRules, Map<String, String> analysisProperties, AnalyzerInfoDto analyzerInfo)
+  public CompletableFuture<HttpResponse<Void>> sendCancelRequest(UUID analysisId){
+    var payload = jsonRequestBuilder.buildCancelBody(analysisId);
+    var request = createRequest(payload, "cancel");
+    return httpClient.sendAsync(request, HttpResponse.BodyHandlers.discarding());
+  }
+
+  public HttpResponse<String> sendAnalyzeRequest(
+    Collection<String> fileNames,
+    Collection<ActiveRule> activeRules,
+    Map<String, String> analysisProperties,
+    AnalyzerInfoDto analyzerInfo,
+    UUID analysisId)
     throws IOException, InterruptedException {
-    var jsonPayload = jsonRequestBuilder.buildBody(fileNames, activeRules, analysisProperties, analyzerInfo);
-    var request = createRequest(jsonPayload);
-    return client.send(request, HttpResponse.BodyHandlers.ofString());
+    var jsonPayload = jsonRequestBuilder.buildAnalyzeBody(fileNames, activeRules, analysisProperties, analyzerInfo, analysisId);
+    var request = createRequest(jsonPayload, "analyze");
+    return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
   }
 
-  public HttpRequest createRequest(String jsonPayload) {
+  public HttpRequest createRequest(String jsonPayload, String path) {
     var settings = context.settings();
     var port = settings.getString(SqvsRoslynPluginPropertyDefinitions.getServerPort());
     var token = settings.getString(SqvsRoslynPluginPropertyDefinitions.getServerToken());
-    var uri = String.format("http://localhost:%s/analyze", port);
+    var uri = String.format("http://localhost:%s/%s", port, path);
     return HttpRequest.newBuilder()
       .uri(URI.create(uri))
       .header("Content-Type", "application/json")

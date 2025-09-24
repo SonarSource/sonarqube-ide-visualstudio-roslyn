@@ -24,6 +24,9 @@ import java.net.http.HttpResponse;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -43,6 +46,7 @@ class HttpAnalysisRequestHandlerTests {
   private final Collection<ActiveRule> activeRules = List.of(mock(ActiveRule.class));
   private final Map<String, String> analysisProperties = Map.of("sonar.cs.disableRazor", "true");
   private final AnalyzerInfoDto analyzerInfo = new AnalyzerInfoDto(false, false);
+  private final UUID analysisId = UUID.randomUUID();
   @RegisterExtension
   private final LogTesterJUnit5 logTester = new LogTesterJUnit5();
   private HttpClientHandler httpClientHandler;
@@ -58,17 +62,17 @@ class HttpAnalysisRequestHandlerTests {
   void analyze_requestSucceeds_ReturnsIssues() throws IOException, InterruptedException {
     mockResponseWithOneIssue(200);
 
-    var result = analysisRequestHandler.analyze(fileNames, activeRules, analysisProperties, analyzerInfo);
+    var result = analysisRequestHandler.analyze(fileNames, activeRules, analysisProperties, analyzerInfo, analysisId);
 
     assertThat(result).hasSize(1);
-    verify(httpClientHandler).sendRequest(fileNames, activeRules, analysisProperties, analyzerInfo);
+    verify(httpClientHandler).sendAnalyzeRequest(fileNames, activeRules, analysisProperties, analyzerInfo, analysisId);
   }
 
   @Test
   void analyze_requestSucceedsWithEmptyBody_logsAndReturnsEmptyIssues() throws IOException, InterruptedException {
     mockResponse(200, "");
 
-    var result = analysisRequestHandler.analyze(fileNames, activeRules, analysisProperties, analyzerInfo);
+    var result = analysisRequestHandler.analyze(fileNames, activeRules, analysisProperties, analyzerInfo, analysisId);
 
     assertThat(result).isEmpty();
     assertThat(logTester.logs(LoggerLevel.WARN)).contains("No body received from the server.");
@@ -78,21 +82,59 @@ class HttpAnalysisRequestHandlerTests {
   void analyze_requestFails_returnsEmptyIssues() throws IOException, InterruptedException {
     mockResponseWithOneIssue(404);
 
-    var result = analysisRequestHandler.analyze(fileNames, activeRules, analysisProperties, analyzerInfo);
+    var result = analysisRequestHandler.analyze(fileNames, activeRules, analysisProperties, analyzerInfo, analysisId);
 
     assertThat(result).isEmpty();
-    verify(httpClientHandler).sendRequest(fileNames, activeRules, analysisProperties, analyzerInfo);
+    verify(httpClientHandler).sendAnalyzeRequest(fileNames, activeRules, analysisProperties, analyzerInfo, analysisId);
     assertThat(logTester.logs(LoggerLevel.ERROR)).contains("Response from server is 404.");
   }
 
   @Test
   void analyze_throws_logsAndReturnsEmptyIssues() throws IOException, InterruptedException {
     var exceptionMessage = "message";
-    when(httpClientHandler.sendRequest(fileNames, activeRules, analysisProperties, analyzerInfo)).thenThrow(new RuntimeException(exceptionMessage));
+    when(httpClientHandler.sendAnalyzeRequest(fileNames, activeRules, analysisProperties, analyzerInfo, analysisId)).thenThrow(new RuntimeException(exceptionMessage));
 
-    var thrown = assertThrows(IllegalStateException.class, () -> analysisRequestHandler.analyze(fileNames, activeRules, analysisProperties, analyzerInfo));
+    var thrown = assertThrows(IllegalStateException.class, () -> analysisRequestHandler.analyze(fileNames, activeRules, analysisProperties, analyzerInfo, analysisId));
 
     assertThat(thrown).hasMessageContaining("Response crashed due to: " + exceptionMessage);
+  }
+
+  @Test
+  void cancelAnalysis_shouldSendCancelRequest() {
+    HttpResponse<Void> mockResponse = mock(HttpResponse.class);
+    when(mockResponse.statusCode()).thenReturn(200);
+    CompletableFuture<HttpResponse<Void>> future = CompletableFuture.completedFuture(mockResponse);
+    when(httpClientHandler.sendCancelRequest(analysisId)).thenReturn(future);
+
+    analysisRequestHandler.cancelAnalysis(analysisId);
+
+    verify(httpClientHandler).sendCancelRequest(analysisId);
+  }
+
+  @Test
+  void cancelAnalysis_shouldHandleExceptions() {
+    var exceptionMessage = "Connection error";
+    CompletableFuture<HttpResponse<Void>> future = new CompletableFuture<>();
+    future.completeExceptionally(new RuntimeException(exceptionMessage));
+    when(httpClientHandler.sendCancelRequest(analysisId)).thenReturn(future);
+
+    analysisRequestHandler.cancelAnalysis(analysisId);
+
+    verify(httpClientHandler).sendCancelRequest(analysisId);
+    assertThat(logTester.logs(LoggerLevel.ERROR)).contains("Failed to cancel analysis due to: " + exceptionMessage);
+  }
+
+  @Test
+  void cancelAnalysis_shouldHandleNonOkStatusCode() {
+    HttpResponse<Void> mockResponse = mock(HttpResponse.class);
+    when(mockResponse.statusCode()).thenReturn(404);
+    CompletableFuture<HttpResponse<Void>> future = CompletableFuture.completedFuture(mockResponse);
+    when(httpClientHandler.sendCancelRequest(analysisId)).thenReturn(future);
+
+    analysisRequestHandler.cancelAnalysis(analysisId);
+
+    verify(httpClientHandler).sendCancelRequest(analysisId);
+    assertThat(logTester.logs(LoggerLevel.ERROR)).contains("Response from cancel request is 404.");
   }
 
   private void mockResponseWithOneIssue(int statusCode) throws IOException, InterruptedException {
@@ -103,6 +145,6 @@ class HttpAnalysisRequestHandlerTests {
     var mockResponse = mock(HttpResponse.class);
     when(mockResponse.statusCode()).thenReturn(statusCode);
     when(mockResponse.body()).thenReturn(body);
-    when(httpClientHandler.sendRequest(fileNames, activeRules, analysisProperties, analyzerInfo)).thenReturn(mockResponse);
+    when(httpClientHandler.sendAnalyzeRequest(fileNames, activeRules, analysisProperties, analyzerInfo, analysisId)).thenReturn(mockResponse);
   }
 }
