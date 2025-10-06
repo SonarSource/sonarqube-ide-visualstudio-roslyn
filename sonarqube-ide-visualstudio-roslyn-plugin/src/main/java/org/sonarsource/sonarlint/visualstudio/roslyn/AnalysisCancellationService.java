@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.visualstudio.roslyn;
 
 import org.sonar.api.Startable;
-import org.sonar.api.scanner.ScannerSide;
 import org.sonarsource.api.sonarlint.SonarLintSide;
 
 import java.util.concurrent.Executors;
@@ -28,7 +27,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-@ScannerSide
 @SonarLintSide(lifespan = SonarLintSide.INSTANCE)
 public class AnalysisCancellationService implements Startable {
   private final ScheduledExecutorService scheduledExecutorService;

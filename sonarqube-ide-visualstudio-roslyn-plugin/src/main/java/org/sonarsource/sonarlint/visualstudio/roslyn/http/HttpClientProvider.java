@@ -19,12 +19,10 @@
  */
 package org.sonarsource.sonarlint.visualstudio.roslyn.http;
 
-import org.sonar.api.scanner.ScannerSide;
 import org.sonarsource.api.sonarlint.SonarLintSide;
 
 import java.net.http.HttpClient;
 
-@ScannerSide
 @SonarLintSide(lifespan = SonarLintSide.INSTANCE)
 public class HttpClientProvider {
 

@@ -27,20 +27,18 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.sonar.api.batch.rule.ActiveRule;
-import org.sonar.api.scanner.ScannerSide;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssue;
 
-@ScannerSide
 @SonarLintSide
 public class HttpAnalysisRequestHandler {
   private static final Logger LOG = Loggers.get(HttpAnalysisRequestHandler.class);
-  private final HttpClientHandler httpClientFactory;
+  private final HttpClientHandler httpClientHandler;
 
-  public HttpAnalysisRequestHandler(HttpClientHandler httpClientFactory) {
-    this.httpClientFactory = httpClientFactory;
+  public HttpAnalysisRequestHandler(HttpClientHandler httpClientHandler) {
+    this.httpClientHandler = httpClientHandler;
   }
 
   public Collection<RoslynIssue> analyze(
@@ -51,7 +49,7 @@ public class HttpAnalysisRequestHandler {
     UUID analysisId) {
     Collection<RoslynIssue> roslynIssues = new ArrayList<>();
     try {
-      var response = httpClientFactory.sendAnalyzeRequest(fileNames, activeRules, analysisProperties, analyzerInfo, analysisId);
+      var response = httpClientHandler.sendAnalyzeRequest(fileNames, activeRules, analysisProperties, analyzerInfo, analysisId);
       if (response.statusCode() != HttpURLConnection.HTTP_OK) {
         LOG.error("Response from server is {}.", response.statusCode());
         return roslynIssues;
@@ -75,13 +73,13 @@ public class HttpAnalysisRequestHandler {
   }
 
   public void cancelAnalysis(UUID analysisId) {
-    var requestFuture = httpClientFactory.sendCancelRequest(analysisId);
+    var requestFuture = httpClientHandler.sendCancelRequest(analysisId);
 
     requestFuture.exceptionally(e -> {
       LOG.error("Failed to cancel analysis due to: {}", e.getMessage(), e);
       return null;
     }).thenApply(response -> {
-      if (response.statusCode() != HttpURLConnection.HTTP_OK) {
+      if (response != null && response.statusCode() != HttpURLConnection.HTTP_OK) {
         LOG.error("Response from cancel request is {}.", response.statusCode());
       }
       return null;

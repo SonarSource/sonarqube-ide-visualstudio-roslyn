@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.visualstudio.roslyn;
 
 import org.sonar.api.batch.rule.ActiveRule;
-import org.sonar.api.scanner.ScannerSide;
 import org.sonar.api.batch.sensor.SensorContext;
 import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.visualstudio.roslyn.http.AnalyzerInfoDto;
@@ -30,11 +29,6 @@ import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssue;
 import java.util.Collection;
 import java.util.Map;
 
-/**
- * Factory for creating AnalysisManager instances.
- * This class has instance-based scope in SonarLint.
- */
-@ScannerSide
 @SonarLintSide
 public class RemoteAnalysisService {
 

@@ -30,11 +30,9 @@ import java.util.concurrent.CompletableFuture;
 
 import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.batch.sensor.SensorContext;
-import org.sonar.api.scanner.ScannerSide;
 import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.visualstudio.roslyn.SqvsRoslynPluginPropertyDefinitions;
 
-@ScannerSide
 @SonarLintSide
 public class HttpClientHandler {
   private final SensorContext context;

@@ -25,12 +25,10 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.sonar.api.batch.rule.ActiveRule;
-import org.sonar.api.scanner.ScannerSide;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.api.sonarlint.SonarLintSide;
 
-@ScannerSide
 @SonarLintSide(lifespan = "INSTANCE")
 public class JsonRequestBuilder {
   private static final Logger LOG = Loggers.get(JsonRequestBuilder.class);

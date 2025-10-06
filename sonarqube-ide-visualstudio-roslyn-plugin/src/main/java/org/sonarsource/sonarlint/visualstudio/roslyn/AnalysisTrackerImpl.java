@@ -36,7 +36,7 @@ public class AnalysisTrackerImpl implements AnalysisTracker {
     this.analysisId = UUID.randomUUID();
     analysisCancellationService.registerAnalysis(this);
   }
-  
+
   @Override
   public UUID getAnalysisId() {
     return analysisId;
@@ -44,10 +44,10 @@ public class AnalysisTrackerImpl implements AnalysisTracker {
 
   @Override
   public synchronized boolean cancelIfNeeded() {
-    if (isCompleted){
+    if (isCompleted) {
       return true;
     }
-    
+
     if (sensorContext.isCancelled()) {
       handler.cancelAnalysis(analysisId);
       setCompletedState();
