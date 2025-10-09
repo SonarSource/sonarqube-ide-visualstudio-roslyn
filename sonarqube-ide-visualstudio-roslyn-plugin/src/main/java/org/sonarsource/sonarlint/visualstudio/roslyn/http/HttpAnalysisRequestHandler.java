@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.visualstudio.roslyn.http;
 
 import com.google.gson.Gson;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
@@ -42,14 +43,14 @@ public class HttpAnalysisRequestHandler {
   }
 
   public Collection<RoslynIssue> analyze(
-    Collection<String> fileNames,
+    Collection<URI> fileUris,
     Collection<ActiveRule> activeRules,
     Map<String, String> analysisProperties,
     AnalyzerInfoDto analyzerInfo,
     UUID analysisId) {
     Collection<RoslynIssue> roslynIssues = new ArrayList<>();
     try {
-      var response = httpClientHandler.sendAnalyzeRequest(fileNames, activeRules, analysisProperties, analyzerInfo, analysisId);
+      var response = httpClientHandler.sendAnalyzeRequest(fileUris, activeRules, analysisProperties, analyzerInfo, analysisId);
       if (response.statusCode() != HttpURLConnection.HTTP_OK) {
         LOG.error("Response from server is {}.", response.statusCode());
         return roslynIssues;

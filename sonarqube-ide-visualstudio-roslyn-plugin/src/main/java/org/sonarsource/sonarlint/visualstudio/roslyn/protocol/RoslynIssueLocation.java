@@ -21,9 +21,11 @@ package org.sonarsource.sonarlint.visualstudio.roslyn.protocol;
 
 import com.google.gson.annotations.SerializedName;
 
+import java.net.URI;
+
 public class RoslynIssueLocation {
-  @SerializedName("FilePath")
-  private String filePath;
+  @SerializedName("FileUri")
+  private URI fileUri;
 
   @SerializedName("Message")
   private String message;
@@ -31,8 +33,8 @@ public class RoslynIssueLocation {
   @SerializedName("TextRange")
   private RoslynIssueTextRange textRange;
 
-  public String getFilePath() {
-    return filePath;
+  public URI getFileUri() {
+    return fileUri;
   }
 
   public String getMessage() {

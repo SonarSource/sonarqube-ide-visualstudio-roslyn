@@ -19,10 +19,11 @@
  */
 package org.sonarsource.sonarlint.visualstudio.roslyn;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.stream.StreamSupport;
 import org.sonar.api.batch.fs.FilePredicate;
 import org.sonar.api.batch.fs.InputFile;
@@ -56,11 +57,11 @@ public class SqvsRoslynSensor implements Sensor {
     this.remoteAnalysisService = remoteAnalysisService;
   }
 
-  private static void handle(SensorContext context, RoslynIssue roslynIssue) {
+  private static void handle(SensorContext context, RoslynIssue roslynIssue) throws URISyntaxException {
     var parts = roslynIssue.getRuleId().split(":");
     var ruleKey = RuleKey.of(parts[0], parts[1]);
     if (context.activeRules().find(ruleKey) != null) {
-      var diagFilePath = Paths.get(roslynIssue.getPrimaryLocation().getFilePath());
+      var diagFilePath = roslynIssue.getPrimaryLocation().getFileUri();
       var diagInputFile = findInputFile(context, diagFilePath);
       if (diagInputFile != null) {
         var newIssue = context.newIssue();
@@ -84,11 +85,11 @@ public class SqvsRoslynSensor implements Sensor {
     }
   }
 
-  private static void handleSecondaryLocations(SensorContext context, RoslynIssue diag, NewIssue newIssue) {
+  private static void handleSecondaryLocations(SensorContext context, RoslynIssue diag, NewIssue newIssue) throws URISyntaxException {
     var flows = diag.getFlows();
     for (var flow : flows) {
       for (var flowLocation : flow.getLocations()) {
-        var filePath = Paths.get(flowLocation.getFilePath());
+        var filePath = flowLocation.getFileUri();
         var inputFile = findInputFile(context, filePath);
         if (inputFile != null) {
           newIssue.addLocation(createLocation(newIssue, flowLocation, inputFile));
@@ -97,8 +98,8 @@ public class SqvsRoslynSensor implements Sensor {
     }
   }
 
-  private static InputFile findInputFile(SensorContext context, Path filePath) {
-    return context.fileSystem().inputFile(context.fileSystem().predicates().is(filePath.toFile()));
+  private static InputFile findInputFile(SensorContext context, URI filePath) {
+    return context.fileSystem().inputFile(context.fileSystem().predicates().hasURI(filePath));
   }
 
   private static NewIssueLocation createLocation(NewIssue newIssue, RoslynIssueLocation location, InputFile inputFile) {
@@ -137,7 +138,7 @@ public class SqvsRoslynSensor implements Sensor {
   }
 
   private void analyze(SensorContext context, FilePredicate predicate) {
-    var inputFiles = getFilePaths(context, predicate);
+    var inputFiles = getFileUris(context, predicate);
     var activeRules = getActiveRules(context);
     var analysisProperties = analysisPropertiesProvider.getAnalysisProperties();
     var analyzerInfo = getAnalyzerInfo();
@@ -152,10 +153,11 @@ public class SqvsRoslynSensor implements Sensor {
 
   }
 
-  private Collection<String> getFilePaths(SensorContext context, FilePredicate predicate) {
+  private List<URI> getFileUris(SensorContext context, FilePredicate predicate) {
     return StreamSupport.stream(
       context.fileSystem().inputFiles(predicate).spliterator(), false)
-      .map(InputFile::absolutePath).toList();
+      .map(InputFile::uri)
+      .toList();
   }
 
   private Collection<ActiveRule> getActiveRules(SensorContext context) {

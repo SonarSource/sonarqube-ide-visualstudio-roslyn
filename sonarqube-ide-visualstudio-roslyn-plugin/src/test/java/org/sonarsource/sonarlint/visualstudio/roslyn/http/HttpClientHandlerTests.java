@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.visualstudio.roslyn.http;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpHeaders;
 import java.util.Collection;
@@ -75,15 +76,19 @@ class HttpClientHandlerTests {
   @Test
   void sendAnalyzeRequest_callsSerializerWithExpectedParameters() throws IOException, InterruptedException {
 
-    Collection<String> fileNames = List.of("File1.cs", "File2.cs");
+    var fileUris = List.of(
+        URI.create("file:///C:/project/src/File1.cs"),
+        URI.create("file://localhost/$c/project/src/File2.cs")
+    );
+
     Map<String, String> analysisProperties = Map.of();
     var analyzerInfo = new AnalyzerInfoDto(true, true);
     Collection<ActiveRule> activeRules = List.of(createMockActiveRule("S100"));
     var analysisId = UUID.randomUUID();
 
-    underTest.sendAnalyzeRequest(fileNames, activeRules, analysisProperties, analyzerInfo, analysisId);
+    underTest.sendAnalyzeRequest(fileUris, activeRules, analysisProperties, analyzerInfo, analysisId);
 
-    verify(jsonRequestBuilder).buildAnalyzeBody(fileNames, activeRules, analysisProperties, analyzerInfo, analysisId);
+    verify(jsonRequestBuilder).buildAnalyzeBody(fileUris, activeRules, analysisProperties, analyzerInfo, analysisId);
     verify(httpClient).send(argThat(httpRequest -> httpRequest.uri().toString().endsWith("/analyze")), any());
   }
 

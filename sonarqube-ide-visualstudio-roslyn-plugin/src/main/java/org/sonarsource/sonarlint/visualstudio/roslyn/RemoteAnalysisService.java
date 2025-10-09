@@ -26,6 +26,7 @@ import org.sonarsource.sonarlint.visualstudio.roslyn.http.AnalyzerInfoDto;
 import org.sonarsource.sonarlint.visualstudio.roslyn.http.HttpAnalysisRequestHandler;
 import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssue;
 
+import java.net.URI;
 import java.util.Collection;
 import java.util.Map;
 
@@ -46,7 +47,7 @@ public class RemoteAnalysisService {
   }
 
   public Collection<RoslynIssue> analyze(
-    Collection<String> inputFiles,
+    Collection<URI> inputFiles,
     Collection<ActiveRule> activeRules,
     Map<String, String> analysisProperties,
     AnalyzerInfoDto analyzerInfo) {

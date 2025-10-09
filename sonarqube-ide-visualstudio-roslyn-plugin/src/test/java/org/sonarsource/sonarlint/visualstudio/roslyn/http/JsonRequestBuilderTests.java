@@ -20,6 +20,9 @@
 package org.sonarsource.sonarlint.visualstudio.roslyn.http;
 
 import com.google.gson.JsonParser;
+
+import java.net.URI;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -50,47 +53,50 @@ class JsonRequestBuilderTests {
 
   @Test
   void buildBody_withEmptyCollections_shouldReturnValidJson() {
-    var fileNames = new ArrayList<String>();
+    var fileUris = new ArrayList<java.net.URI>();
     var activeRules = new ArrayList<ActiveRule>();
     var analysisProperties = Map.<String, String>of();
     var analyzerInfo = new AnalyzerInfoDto(false, false);
-    var expected = "{\"FileNames\":[],\"ActiveRules\":[],\"AnalysisProperties\":{},\"AnalyzerInfo\":{\"ShouldUseCsharpEnterprise\":false,\"ShouldUseVbEnterprise\":false},\"AnalysisId\":\"ed89f185-c2d6-4d03-aef1-334747e7fbdb\"}";
+    var expected = "{\"FileUris\":[],\"ActiveRules\":[],\"AnalysisProperties\":{},\"AnalyzerInfo\":{\"ShouldUseCsharpEnterprise\":false,\"ShouldUseVbEnterprise\":false},\"AnalysisId\":\"ed89f185-c2d6-4d03-aef1-334747e7fbdb\"}";
 
-    var result = jsonParser.buildAnalyzeBody(fileNames, activeRules, analysisProperties, analyzerInfo, analysisId);
+    var result = jsonParser.buildAnalyzeBody(fileUris, activeRules, analysisProperties, analyzerInfo, analysisId);
 
     assertThat(result).isEqualTo(expected);
   }
 
   @Test
   void buildBody_withAllParametersFilled_shouldReturnValidJson() {
-    var fileNames = List.of("File1.cs", "File2.vb");
+    var fileUris = List.of(
+      java.net.URI.create("file:///C:/project/src/File1.cs"),
+      java.net.URI.create("file://localhost/$c/project/src/File2.cs")
+    );
     var activeRules = List.of(createMockActiveRule("S100", CSharpLanguage.REPOSITORY_KEY, new HashMap<>()),
       createMockActiveRule("S101", VbNetLanguage.REPOSITORY_KEY, new HashMap<>()));
     var analysisProperties = Map.of("sonar.vb.disableRazor", "false");
     var analyzerInfo = new AnalyzerInfoDto(true, false);
-    var expected = "{\"FileNames\":[\"File1.cs\",\"File2.vb\"],\"ActiveRules\":[{\"RuleId\":\"csharpsquid:S100\",\"Parameters\":{}},{\"RuleId\":\"vbnet:S101\",\"Parameters\":{}}],\"AnalysisProperties\":{\"sonar.vb.disableRazor\":\"false\"},\"AnalyzerInfo\":{\"ShouldUseCsharpEnterprise\":true,\"ShouldUseVbEnterprise\":false},\"AnalysisId\":\"ed89f185-c2d6-4d03-aef1-334747e7fbdb\"}";
+    var expected = "{\"FileUris\":[\"file:///C:/project/src/File1.cs\",\"file://localhost/$c/project/src/File2.cs\"],\"ActiveRules\":[{\"RuleId\":\"csharpsquid:S100\",\"Parameters\":{}},{\"RuleId\":\"vbnet:S101\",\"Parameters\":{}}],\"AnalysisProperties\":{\"sonar.vb.disableRazor\":\"false\"},\"AnalyzerInfo\":{\"ShouldUseCsharpEnterprise\":true,\"ShouldUseVbEnterprise\":false},\"AnalysisId\":\"ed89f185-c2d6-4d03-aef1-334747e7fbdb\"}";
 
-    var result = jsonParser.buildAnalyzeBody(fileNames, activeRules, analysisProperties, analyzerInfo, analysisId);
+    var result = jsonParser.buildAnalyzeBody(fileUris, activeRules, analysisProperties, analyzerInfo, analysisId);
 
     assertThat(result).isEqualTo(expected);
   }
 
   @Test
   void buildBody_withActiveRules_shouldReturnRuleId() {
-    var fileNames = new ArrayList<String>();
+    var fileUris = new ArrayList<java.net.URI>();
     var activeRule = createMockActiveRule("S100", CSharpLanguage.REPOSITORY_KEY, new HashMap<>());
     var analysisProperties = Map.<String, String>of();
     var analyzerInfo = new AnalyzerInfoDto(false, true);
-    var expected = "{\"FileNames\":[],\"ActiveRules\":[{\"RuleId\":\"csharpsquid:S100\",\"Parameters\":{}}],\"AnalysisProperties\":{},\"AnalyzerInfo\":{\"ShouldUseCsharpEnterprise\":false,\"ShouldUseVbEnterprise\":true},\"AnalysisId\":\"ed89f185-c2d6-4d03-aef1-334747e7fbdb\"}";
+    var expected = "{\"FileUris\":[],\"ActiveRules\":[{\"RuleId\":\"csharpsquid:S100\",\"Parameters\":{}}],\"AnalysisProperties\":{},\"AnalyzerInfo\":{\"ShouldUseCsharpEnterprise\":false,\"ShouldUseVbEnterprise\":true},\"AnalysisId\":\"ed89f185-c2d6-4d03-aef1-334747e7fbdb\"}";
 
-    var result = jsonParser.buildAnalyzeBody(fileNames, List.of(activeRule), analysisProperties, analyzerInfo, analysisId);
+    var result = jsonParser.buildAnalyzeBody(fileUris, List.of(activeRule), analysisProperties, analyzerInfo, analysisId);
 
     assertThat(result).isEqualTo(expected);
   }
 
   @Test
   void buildBody_withActiveRulesWithParams_shouldIncludeParams() {
-    var fileNames = new ArrayList<String>();
+    var fileUris = new ArrayList<java.net.URI>();
     var analysisProperties = Map.<String, String>of();
     var params = new HashMap<String, String>();
     params.put("maximum", "10");
@@ -99,42 +105,46 @@ class JsonRequestBuilderTests {
     var vbnetRuleWithParams = createMockActiveRule("S1066", VbNetLanguage.REPOSITORY_KEY, params);
     var activeRules = List.of(csharpRuleWithParams, vbnetRuleWithParams);
     var analyzerInfo = new AnalyzerInfoDto(true, true);
-    var expected = "{\"FileNames\":[],\"ActiveRules\":[{\"RuleId\":\"csharpsquid:S1003\",\"Parameters\":{\"maximum\":\"10\",\"isRegularExpression\":\"true\"}},{\"RuleId\":\"vbnet:S1066\",\"Parameters\":{\"maximum\":\"10\",\"isRegularExpression\":\"true\"}}],\"AnalysisProperties\":{},\"AnalyzerInfo\":{\"ShouldUseCsharpEnterprise\":true,\"ShouldUseVbEnterprise\":true},\"AnalysisId\":\"ed89f185-c2d6-4d03-aef1-334747e7fbdb\"}";
+    var expected = "{\"FileUris\":[],\"ActiveRules\":[{\"RuleId\":\"csharpsquid:S1003\",\"Parameters\":{\"maximum\":\"10\",\"isRegularExpression\":\"true\"}},{\"RuleId\":\"vbnet:S1066\",\"Parameters\":{\"maximum\":\"10\",\"isRegularExpression\":\"true\"}}],\"AnalysisProperties\":{},\"AnalyzerInfo\":{\"ShouldUseCsharpEnterprise\":true,\"ShouldUseVbEnterprise\":true},\"AnalysisId\":\"ed89f185-c2d6-4d03-aef1-334747e7fbdb\"}";
 
-    var result = jsonParser.buildAnalyzeBody(fileNames, activeRules, analysisProperties, analyzerInfo, analysisId);
+    var result = jsonParser.buildAnalyzeBody(fileUris, activeRules, analysisProperties, analyzerInfo, analysisId);
 
     assertThat(result).isEqualTo(expected);
   }
 
   @Test
   void buildBody_withNullCollections_throws() {
-    Collection<String> fileNames = null;
+    Collection<java.net.URI> fileUris = null;
     Collection<ActiveRule> activeRules = null;
     Map<String, String> analysisProperties = null;
     AnalyzerInfoDto analyzerInfo = null;
 
-    assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> jsonParser.buildAnalyzeBody(fileNames, activeRules, analysisProperties, analyzerInfo, analysisId));
+    assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> jsonParser.buildAnalyzeBody(fileUris, activeRules, analysisProperties, analyzerInfo, analysisId));
   }
 
   @Test
-  void buildBody_withSpecialCharactersInFileNames_shouldEscapeProperly() {
-    var fileNames = Arrays.asList(
-      "file with spaces.cs",
-      "file\"with\"quotes.cs",
-      "file\\with\\backslashes.cs");
+  void buildBody_withSpecialCharactersInFileUris_shouldEscapeProperly() {
+    String pathWithSpaces = "C:\\project\\src\\file with spaces.cs";
+    String pathWithCharacters = "C:\\project\\src\\file(with)braces'and'quotes.cs";
+    String uncPath = "\\\\server-name\\share-name\\path\\to\\uncfile.cs";
+    var fileUris = Arrays.asList(
+        Path.of(pathWithSpaces).toUri(),
+        Path.of(pathWithCharacters).toUri(),
+        Path.of(uncPath).toUri()
+    );
     var activeRules = new ArrayList<ActiveRule>();
     var analysisProperties = Map.<String, String>of();
     var analyzerInfo = new AnalyzerInfoDto(false, false);
-    var expected = "{\"FileNames\":[\"file with spaces.cs\",\"file\\\"with\\\"quotes.cs\",\"file\\\\with\\\\backslashes.cs\"],\"ActiveRules\":[],\"AnalysisProperties\":{},\"AnalyzerInfo\":{\"ShouldUseCsharpEnterprise\":false,\"ShouldUseVbEnterprise\":false},\"AnalysisId\":\"ed89f185-c2d6-4d03-aef1-334747e7fbdb\"}";
+    var expected = "{\"FileUris\":[\"file:///C:/project/src/file%20with%20spaces.cs\",\"file:///C:/project/src/file(with)braces\\u0027and\\u0027quotes.cs\",\"file://server-name/share-name/path/to/uncfile.cs\"],\"ActiveRules\":[],\"AnalysisProperties\":{},\"AnalyzerInfo\":{\"ShouldUseCsharpEnterprise\":false,\"ShouldUseVbEnterprise\":false},\"AnalysisId\":\"ed89f185-c2d6-4d03-aef1-334747e7fbdb\"}";
 
-    var result = jsonParser.buildAnalyzeBody(fileNames, activeRules, analysisProperties, analyzerInfo, analysisId);
+    var result = jsonParser.buildAnalyzeBody(fileUris, activeRules, analysisProperties, analyzerInfo, analysisId);
 
     assertThat(result).isEqualTo(expected);
-    var fileNamesArray = JsonParser.parseString(result).getAsJsonObject().get("FileNames").getAsJsonArray();
-    assertThat(fileNamesArray).hasSize(3);
-    assertThat(fileNamesArray.get(0).getAsString()).hasToString("file with spaces.cs");
-    assertThat(fileNamesArray.get(1).getAsString()).hasToString("file\"with\"quotes.cs");
-    assertThat(fileNamesArray.get(2).getAsString()).hasToString("file\\with\\backslashes.cs");
+    var serializedFileUris = JsonParser.parseString(result).getAsJsonObject().get("FileUris").getAsJsonArray();
+    assertThat(serializedFileUris).hasSize(3);
+    assertThat(URI.create(serializedFileUris.get(0).getAsString())).isEqualTo(fileUris.get(0));
+    assertThat(URI.create(serializedFileUris.get(1).getAsString())).isEqualTo(fileUris.get(1));
+    assertThat(URI.create(serializedFileUris.get(2).getAsString())).isEqualTo(fileUris.get(2));
   }
 
   @Test

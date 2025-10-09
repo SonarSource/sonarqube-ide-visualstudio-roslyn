@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.visualstudio.roslyn;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -49,7 +50,6 @@ import org.sonar.api.batch.sensor.issue.IssueLocation;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.testfixtures.log.LogAndArguments;
 import org.sonar.api.testfixtures.log.LogTesterJUnit5;
-import org.sonarsource.sonarlint.visualstudio.roslyn.http.HttpAnalysisRequestHandler;
 import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -106,8 +106,8 @@ class SqvsRoslynSensorTests {
     csFile2 = createInputFile("foo2.cs", "var b=2;", CSharpLanguage.LANGUAGE_KEY);
     vbFile = createInputFile("boo.vb", "Dim a As Integer = 1", VbNetLanguage.LANGUAGE_KEY);
     vbFile2 = createInputFile("boo2.vb", "Dim b As Integer = 2", VbNetLanguage.LANGUAGE_KEY);
-    csharpIssue = mockRoslynIssue("S123", CSharpLanguage.REPOSITORY_KEY, csFile.filename());
-    vbIssue = mockRoslynIssue("S456", VbNetLanguage.REPOSITORY_KEY, vbFile.filename());
+    csharpIssue = mockRoslynIssue("S123", CSharpLanguage.REPOSITORY_KEY, csFile.uri());
+    vbIssue = mockRoslynIssue("S456", VbNetLanguage.REPOSITORY_KEY, vbFile.uri());
   }
 
   @Test
@@ -136,7 +136,7 @@ class SqvsRoslynSensorTests {
 
     underTest.execute(sensorContext);
 
-    verify(remoteAnalysisService).analyze(argThat(fileNames -> fileNames.stream().anyMatch(f -> f.contains(fileName))),
+    verify(remoteAnalysisService).analyze(argThat(fileNames -> fileNames.stream().anyMatch(f -> f.toString().contains(fileName))),
       anyList(), any(), any());
   }
 
@@ -165,7 +165,7 @@ class SqvsRoslynSensorTests {
 
     underTest.execute(sensorContext);
 
-    verify(remoteAnalysisService).analyze(argThat(fileNames -> fileNames.stream().anyMatch(file -> file.contains(fileName))),
+    verify(remoteAnalysisService).analyze(argThat(fileNames -> fileNames.stream().anyMatch(file -> file.toString().contains(fileName))),
       argThat(activeRules -> activeRules.size() == 1 && activeRules.stream().findFirst().get().ruleKey().rule().equals("S123")),
       argThat(x -> x.entrySet().contains(Map.entry("sonar.cs.disableRazor", "true"))),
       argThat(x -> x.shouldUseCsharpEnterprise() == expectedShouldUseCsharpEnterprise && !x.shouldUseVbEnterprise()));
@@ -185,7 +185,7 @@ class SqvsRoslynSensorTests {
 
     underTest.execute(sensorContext);
 
-    verify(remoteAnalysisService).analyze(argThat(fileNames -> fileNames.stream().anyMatch(file -> file.contains(fileName))),
+    verify(remoteAnalysisService).analyze(argThat(fileNames -> fileNames.stream().anyMatch(file -> file.toString().contains(fileName))),
       argThat(activeRules -> activeRules.size() == 1 && activeRules.stream().findFirst().get().ruleKey().rule().equals("S456")),
       argThat(x -> x.entrySet().contains(Map.entry("sonar.vbnet.disableRazor", "false"))),
       argThat(x -> x.shouldUseVbEnterprise() == expectedShouldUseVbEnterprise && !x.shouldUseCsharpEnterprise()));
@@ -205,7 +205,7 @@ class SqvsRoslynSensorTests {
     underTest.execute(sensorContext);
 
     verify(remoteAnalysisService).analyze(argThat(fileNames -> fileNames.size() == 2 &&
-      fileNames.stream().anyMatch(file -> file.contains("foo.cs") || file.contains("boo.vb"))),
+      fileNames.stream().anyMatch(file -> file.toString().contains("foo.cs") || file.toString().contains("boo.vb"))),
       argThat(activeRules -> activeRules.size() == 2 &&
         activeRules.stream().anyMatch(rule -> rule.ruleKey().rule().equals("S123") || rule.ruleKey().rule().contains("S456"))),
       argThat(x -> x.entrySet().contains(Map.entry("sonar.cs.disableRazor", "true"))),
@@ -217,7 +217,7 @@ class SqvsRoslynSensorTests {
     sensorContext.fileSystem().add(csFile);
     sensorContext.setActiveRules(new ActiveRulesBuilder().addRule(csActiveRule).build());
     when(remoteAnalysisService.analyze(
-      argThat(x -> x.stream().anyMatch(file -> file.contains(csFile.filename()))),
+      argThat(x -> x.stream().anyMatch(file -> file.toString().contains(csFile.filename()))),
       argThat(x -> x.stream().anyMatch(cs -> cs.ruleKey().rule().contains(csActiveRule.ruleKey().rule()))),
       any(),
       argThat(x -> !x.shouldUseCsharpEnterprise() && !x.shouldUseVbEnterprise())))
@@ -235,7 +235,7 @@ class SqvsRoslynSensorTests {
       .addRule(vbActiveRule)
       .build());
     when(remoteAnalysisService.analyze(
-      argThat(x -> x.stream().anyMatch(file -> file.contains(vbFile.filename()))),
+      argThat(x -> x.stream().anyMatch(file -> file.toString().contains(vbFile.uri().toString()))),
       argThat(x -> x.stream().anyMatch(cs -> cs.ruleKey().rule().contains(vbActiveRule.ruleKey().rule()))),
       any(),
       argThat(x -> !x.shouldUseCsharpEnterprise() && !x.shouldUseVbEnterprise())))
@@ -251,9 +251,9 @@ class SqvsRoslynSensorTests {
     sensorContext.fileSystem().add(csFile);
     sensorContext.fileSystem().add(csFile2);
     sensorContext.setActiveRules(new ActiveRulesBuilder().addRule(csActiveRule).build());
-    var csIssueWithSecondaryLocations = mockRoslynIssueWithSecondaryLocations(csActiveRule.ruleKey().rule(), CSharpLanguage.REPOSITORY_KEY, csFile.filename(), csFile2.filename());
+    var csIssueWithSecondaryLocations = mockRoslynIssueWithSecondaryLocations(csActiveRule.ruleKey().rule(), CSharpLanguage.REPOSITORY_KEY, csFile.uri(), csFile2.uri());
     when(remoteAnalysisService.analyze(
-      argThat(x -> x.stream().anyMatch(file -> file.contains(csFile.filename()))),
+      argThat(x -> x.stream().anyMatch(file -> file.toString().contains(csFile.filename()))),
       argThat(x -> x.stream().anyMatch(cs -> cs.ruleKey().rule().contains(csActiveRule.ruleKey().rule()))),
       any(),
       argThat(x -> !x.shouldUseCsharpEnterprise() && !x.shouldUseVbEnterprise())))
@@ -274,9 +274,9 @@ class SqvsRoslynSensorTests {
     sensorContext.fileSystem().add(vbFile);
     sensorContext.fileSystem().add(vbFile2);
     sensorContext.setActiveRules(new ActiveRulesBuilder().addRule(vbActiveRule).build());
-    var vbIssueWithSecondaryLocations = mockRoslynIssueWithSecondaryLocations(vbActiveRule.ruleKey().rule(), VbNetLanguage.REPOSITORY_KEY, vbFile.filename(), vbFile2.filename());
+    var vbIssueWithSecondaryLocations = mockRoslynIssueWithSecondaryLocations(vbActiveRule.ruleKey().rule(), VbNetLanguage.REPOSITORY_KEY, vbFile.uri(), vbFile2.uri());
     when(remoteAnalysisService.analyze(
-      argThat(x -> x.stream().anyMatch(file -> file.contains(vbFile.filename()))),
+      argThat(x -> x.stream().anyMatch(file -> file.toString().contains(vbFile.filename()))),
       argThat(x -> x.stream().anyMatch(cs -> cs.ruleKey().rule().contains(vbActiveRule.ruleKey().rule()))),
       any(),
       argThat(x -> !x.shouldUseCsharpEnterprise() && !x.shouldUseVbEnterprise())))
@@ -298,7 +298,7 @@ class SqvsRoslynSensorTests {
     sensorContext.setActiveRules(new ActiveRulesBuilder()
       .addRule(vbActiveRule)
       .build());
-    var vbWrongIssue = mockRoslynIssueWithWrongLocation(vbActiveRule.ruleKey().rule(), VbNetLanguage.REPOSITORY_KEY, vbFile.filename());
+    var vbWrongIssue = mockRoslynIssueWithWrongLocation(vbActiveRule.ruleKey().rule(), VbNetLanguage.REPOSITORY_KEY, vbFile.uri());
     when(remoteAnalysisService.analyze(any(), any(), any(), any()))
       .thenReturn(List.of(vbIssue, vbWrongIssue));
 
@@ -312,12 +312,12 @@ class SqvsRoslynSensorTests {
     var mockNewIssue = new MockSonarLintIssue();
     sensorContext = spy(sensorContext);
     doReturn(mockNewIssue).when(sensorContext).newIssue();
-    var testFileName = testFile.filename();
+    var testFileName = testFile.uri();
     sensorContext.fileSystem().add(testFile);
     sensorContext.setActiveRules(new ActiveRulesBuilder().addRule(activeRule).build());
     var csIssueWithQuickFix = mockRoslynIssueWithQuickFixes(activeRule.ruleKey().rule(), languageRepositoryKey, testFileName, "Custom QuickFix value provided by RoslynIssue");
     when(remoteAnalysisService.analyze(
-      argThat(x -> x.stream().anyMatch(file -> file.contains(testFileName))),
+      argThat(x -> x.stream().anyMatch(file -> file.toString().contains(testFileName.toString()))),
       argThat(x -> x.stream().anyMatch(cs -> cs.ruleKey().rule().contains(activeRule.ruleKey().rule()))),
       any(),
       argThat(x -> !x.shouldUseCsharpEnterprise() && !x.shouldUseVbEnterprise())))
@@ -352,7 +352,7 @@ class SqvsRoslynSensorTests {
       .build();
   }
 
-  private RoslynIssue mockRoslynIssue(String ruleKey, String repository, String filePath) {
+  private RoslynIssue mockRoslynIssue(String ruleKey, String repository, URI filePath) {
     var roslynIssue = mock(RoslynIssue.class);
     when(roslynIssue.getRuleId()).thenReturn(repository + ":" + ruleKey);
     var primaryLocation = mockIssueLocation(filePath);
@@ -371,9 +371,9 @@ class SqvsRoslynSensorTests {
     when(issueLocation.getTextRange()).thenReturn(textRange);
   }
 
-  private RoslynIssueLocation mockIssueLocation(String filePath) {
+  private RoslynIssueLocation mockIssueLocation(URI filePath) {
     var location = mock(RoslynIssueLocation.class);
-    when(location.getFilePath()).thenReturn(filePath);
+    when(location.getFileUri()).thenReturn(filePath);
     when(location.getMessage()).thenReturn("Don't do this");
     return location;
   }
@@ -385,7 +385,7 @@ class SqvsRoslynSensorTests {
     return flow;
   }
 
-  private RoslynIssue mockRoslynIssueWithSecondaryLocations(String ruleKey, String repository, String filePath, String filePath2) {
+  private RoslynIssue mockRoslynIssueWithSecondaryLocations(String ruleKey, String repository, URI filePath, URI filePath2) {
     var roslynIssue = mockRoslynIssue(ruleKey, repository, filePath);
 
     var secondaryLocation = mockIssueLocation(filePath);
@@ -400,7 +400,7 @@ class SqvsRoslynSensorTests {
     return roslynIssue;
   }
 
-  private RoslynIssue mockRoslynIssueWithQuickFixes(String ruleKey, String repository, String filePath, String quickFixValue) {
+  private RoslynIssue mockRoslynIssueWithQuickFixes(String ruleKey, String repository, URI filePath, String quickFixValue) {
     var roslynIssue = mockRoslynIssue(ruleKey, repository, filePath);
 
     var quickFix = mock(RoslynIssueQuickFix.class);
@@ -412,9 +412,9 @@ class SqvsRoslynSensorTests {
     return roslynIssue;
   }
 
-  private RoslynIssue mockRoslynIssueWithWrongLocation(String ruleKey, String repository, String filePath) {
+  private RoslynIssue mockRoslynIssueWithWrongLocation(String ruleKey, String repository, URI filePath) {
     var roslynIssue = mockRoslynIssue(ruleKey, repository, filePath);
-    var primaryLocation = mockIssueLocation(vbFile.filename());
+    var primaryLocation = mockIssueLocation(vbFile.uri());
     when(roslynIssue.getPrimaryLocation()).thenReturn(primaryLocation);
     mockTextRange(primaryLocation, 666, 666, 600, 700);
     return roslynIssue;
@@ -436,7 +436,7 @@ class SqvsRoslynSensorTests {
     var actualLocations = actualIssue.flows().stream().flatMap(x -> x.locations().stream()).toList();
     var expectedLocations = expectedIssue.getFlows().stream().flatMap(x -> x.getLocations().stream()).toList();
     for (var location : actualLocations) {
-      var expectedLocation = expectedLocations.stream().filter(x -> x.getFilePath().equals(location.inputComponent().toString())).findFirst().orElse(null);
+      var expectedLocation = expectedLocations.stream().filter(x -> Path.of(x.getFileUri()).getFileName().toString().equals(location.inputComponent().toString())).findFirst().orElse(null);
       verifyExpectedLocation(expectedLocation, location);
     }
   }
@@ -453,7 +453,8 @@ class SqvsRoslynSensorTests {
 
   private void verifyExpectedLocation(@Nullable RoslynIssueLocation expectedIssueLocation, IssueLocation actualIssueLocation) {
     assertThat(expectedIssueLocation).isNotNull();
-    assertThat(actualIssueLocation.inputComponent().toString()).hasToString(expectedIssueLocation.getFilePath());
+    var uriFilePath = Path.of(expectedIssueLocation.getFileUri()).getFileName().toString();
+    assertThat(actualIssueLocation.inputComponent().toString()).hasToString(uriFilePath);
     assertThat(actualIssueLocation.message()).isEqualTo(expectedIssueLocation.getMessage());
     verifyExpectedTextRange(actualIssueLocation.textRange(), expectedIssueLocation.getTextRange());
   }
