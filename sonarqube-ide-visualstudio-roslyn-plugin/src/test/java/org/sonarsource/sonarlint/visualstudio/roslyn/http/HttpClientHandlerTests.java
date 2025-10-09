@@ -20,10 +20,13 @@
 package org.sonarsource.sonarlint.visualstudio.roslyn.http;
 
 import java.io.IOException;
+import java.net.http.HttpClient;
 import java.net.http.HttpHeaders;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.sonar.api.batch.rule.ActiveRule;
@@ -33,26 +36,36 @@ import org.sonar.api.rule.RuleKey;
 import org.sonarsource.sonarlint.visualstudio.roslyn.SqvsRoslynPluginPropertyDefinitions;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class HttpClientHandlerTests {
   private SensorContext sensorContext;
+  private JsonRequestBuilder jsonRequestBuilder;
+  private HttpClient httpClient;
+  private HttpClientHandler underTest;
 
   @BeforeEach
   void init() {
     sensorContext = mock(SensorContext.class);
+    mockSettings("60000", "myToken");
+    jsonRequestBuilder = mock(JsonRequestBuilder.class);
+    when(jsonRequestBuilder.buildAnalyzeBody(any(), any(), any(), any(), any())).thenReturn("");
+    when(jsonRequestBuilder.buildCancelBody(any())).thenReturn("");
+    HttpClientProvider httpClientProvider = mock(HttpClientProvider.class);
+    httpClient = mock(HttpClient.class);
+    when(httpClientProvider.getHttpClient()).thenReturn(httpClient);
+    underTest = new HttpClientHandler(sensorContext, jsonRequestBuilder, httpClientProvider);
   }
 
   @Test
   void createRequest_setsUriAsExpected() {
-    mockSettings("60000", "myToken");
-    var httpClientHandler = new HttpClientHandler(sensorContext, mock(JsonRequestBuilder.class));
+    var result = underTest.createRequest("", "myuri");
 
-    var result = httpClientHandler.createRequest("");
-
-    assertThat(result.uri().toString()).hasToString("http://localhost:60000/analyze");
+    assertThat(result.uri().toString()).hasToString("http://localhost:60000/myuri");
     assertThat(result.method()).isEqualTo("POST");
     HttpHeaders headers = result.headers();
     assertThat(headers.firstValue("Content-Type").get()).hasToString("application/json");
@@ -60,21 +73,28 @@ class HttpClientHandlerTests {
   }
 
   @Test
-  void sendRequest_callsParserWithExpectedParameters() throws IOException, InterruptedException {
-    JsonRequestBuilder myMock = mock(JsonRequestBuilder.class);
+  void sendAnalyzeRequest_callsSerializerWithExpectedParameters() throws IOException, InterruptedException {
+
     Collection<String> fileNames = List.of("File1.cs", "File2.cs");
     Map<String, String> analysisProperties = Map.of();
     var analyzerInfo = new AnalyzerInfoDto(true, true);
     Collection<ActiveRule> activeRules = List.of(createMockActiveRule("S100"));
-    var httpClientHandler = new HttpClientHandler(sensorContext, myMock);
+    var analysisId = UUID.randomUUID();
 
-    try {
-      httpClientHandler.sendRequest(fileNames, activeRules, analysisProperties, analyzerInfo);
-    } catch (Exception ex) {
-      // expecting request to fail
-    }
+    underTest.sendAnalyzeRequest(fileNames, activeRules, analysisProperties, analyzerInfo, analysisId);
 
-    verify(myMock).buildBody(fileNames, activeRules, analysisProperties, analyzerInfo);
+    verify(jsonRequestBuilder).buildAnalyzeBody(fileNames, activeRules, analysisProperties, analyzerInfo, analysisId);
+    verify(httpClient).send(argThat(httpRequest -> httpRequest.uri().toString().endsWith("/analyze")), any());
+  }
+
+  @Test
+  void sendCancelRequest_callsSerializerWithExpectedParameters(){
+    var analysisId = UUID.randomUUID();
+
+    underTest.sendCancelRequest(analysisId);
+
+    verify(jsonRequestBuilder).buildCancelBody(analysisId);
+    verify(httpClient).sendAsync(argThat(httpRequest -> httpRequest.uri().toString().endsWith("/cancel")), any());
   }
 
   private ActiveRule createMockActiveRule(String ruleId) {

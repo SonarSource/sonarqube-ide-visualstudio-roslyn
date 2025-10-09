@@ -19,15 +19,20 @@
  */
 package org.sonarsource.sonarlint.visualstudio.roslyn.http;
 
-import com.google.gson.annotations.SerializedName;
-import java.util.Collection;
-import java.util.Map;
+import org.sonarsource.api.sonarlint.SonarLintSide;
 
-public record AnalysisRequestDto(
-  @SerializedName("FileNames") Collection<String> fileNames,
-  @SerializedName("ActiveRules") Collection<ActiveRuleDto> activeRules,
-  @SerializedName("AnalysisProperties") Map<String, String> analysisProperties,
-  @SerializedName("AnalyzerInfo") AnalyzerInfoDto analyzerInfo,
-  @SerializedName("AnalysisId") java.util.UUID analysisId) {
+import java.net.http.HttpClient;
+
+@SonarLintSide(lifespan = SonarLintSide.INSTANCE)
+public class HttpClientProvider {
+
+  private final HttpClient httpClient;
+
+  public HttpClientProvider() {
+    httpClient = HttpClient.newHttpClient();
+  }
+
+  public HttpClient getHttpClient() {
+    return httpClient;
+  }
 }
-

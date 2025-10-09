@@ -22,24 +22,35 @@ package org.sonarsource.sonarlint.visualstudio.roslyn.http;
 import com.google.gson.Gson;
 import java.util.Collection;
 import java.util.Map;
+import java.util.UUID;
+
 import org.sonar.api.batch.rule.ActiveRule;
-import org.sonar.api.scanner.ScannerSide;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.api.sonarlint.SonarLintSide;
 
-@ScannerSide
 @SonarLintSide(lifespan = "INSTANCE")
 public class JsonRequestBuilder {
   private static final Logger LOG = Loggers.get(JsonRequestBuilder.class);
 
-  public String buildBody(Collection<String> fileNames, Collection<ActiveRule> activeRules, Map<String, String> analysisProperties, AnalyzerInfoDto analyzerInfo) {
+  public String buildAnalyzeBody(
+    Collection<String> fileNames,
+    Collection<ActiveRule> activeRules,
+    Map<String, String> analysisProperties,
+    AnalyzerInfoDto analyzerInfo,
+    UUID analysisId) {
     var activeRuleDtos = activeRules.stream()
       .map(rule -> new ActiveRuleDto(
         rule.ruleKey().toString(),
         rule.params()))
       .toList();
-    var analysisRequest = new AnalysisRequestDto(fileNames, activeRuleDtos, analysisProperties, analyzerInfo);
+    var analysisRequest = new AnalysisRequestDto(fileNames, activeRuleDtos, analysisProperties, analyzerInfo, analysisId);
+
+    return new Gson().toJson(analysisRequest);
+  }
+
+  public String buildCancelBody(UUID analysisId) {
+    var analysisRequest = new CancellationRequestDto(analysisId);
 
     return new Gson().toJson(analysisRequest);
   }

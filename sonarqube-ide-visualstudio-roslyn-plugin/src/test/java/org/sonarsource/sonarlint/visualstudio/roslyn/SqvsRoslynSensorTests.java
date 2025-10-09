@@ -62,7 +62,7 @@ class SqvsRoslynSensorTests {
   private final NewActiveRule vbActiveRule = new NewActiveRule.Builder().setRuleKey(RuleKey.of(VbNetLanguage.REPOSITORY_KEY, "S456")).build();
   @RegisterExtension
   LogTesterJUnit5 logTester = new LogTesterJUnit5();
-  private HttpAnalysisRequestHandler analysisRequestHandler;
+  private RemoteAnalysisService remoteAnalysisService;
   private InstanceConfigurationProvider instanceConfigurationProvider;
   private AnalysisPropertiesProvider analysisPropertiesProvider;
   private SensorContextTester sensorContext;
@@ -96,12 +96,12 @@ class SqvsRoslynSensorTests {
 
   @BeforeEach
   void prepare(@TempDir Path tmp) throws Exception {
-    analysisRequestHandler = mock(HttpAnalysisRequestHandler.class);
+    remoteAnalysisService = mock(RemoteAnalysisService.class);
     analysisPropertiesProvider = mock(AnalysisPropertiesProvider.class);
     instanceConfigurationProvider = mock(InstanceConfigurationProvider.class);
     baseDir = tmp.toRealPath();
     sensorContext = SensorContextTester.create(baseDir);
-    underTest = new SqvsRoslynSensor(analysisRequestHandler, instanceConfigurationProvider, analysisPropertiesProvider);
+    underTest = new SqvsRoslynSensor(instanceConfigurationProvider, analysisPropertiesProvider, remoteAnalysisService);
     csFile = createInputFile("foo.cs", "var a=1;", CSharpLanguage.LANGUAGE_KEY);
     csFile2 = createInputFile("foo2.cs", "var b=2;", CSharpLanguage.LANGUAGE_KEY);
     vbFile = createInputFile("boo.vb", "Dim a As Integer = 1", VbNetLanguage.LANGUAGE_KEY);
@@ -125,7 +125,7 @@ class SqvsRoslynSensorTests {
   void noopIfNoFiles() {
     underTest.execute(sensorContext);
 
-    verifyNoInteractions(analysisRequestHandler);
+    verifyNoInteractions(remoteAnalysisService);
   }
 
   @ParameterizedTest
@@ -136,7 +136,7 @@ class SqvsRoslynSensorTests {
 
     underTest.execute(sensorContext);
 
-    verify(analysisRequestHandler).analyze(argThat(fileNames -> fileNames.stream().anyMatch(f -> f.contains(fileName))),
+    verify(remoteAnalysisService).analyze(argThat(fileNames -> fileNames.stream().anyMatch(f -> f.contains(fileName))),
       anyList(), any(), any());
   }
 
@@ -148,7 +148,7 @@ class SqvsRoslynSensorTests {
 
     underTest.execute(sensorContext);
 
-    verifyNoInteractions(analysisRequestHandler);
+    verifyNoInteractions(remoteAnalysisService);
   }
 
   @ParameterizedTest
@@ -165,7 +165,7 @@ class SqvsRoslynSensorTests {
 
     underTest.execute(sensorContext);
 
-    verify(analysisRequestHandler).analyze(argThat(fileNames -> fileNames.stream().anyMatch(file -> file.contains(fileName))),
+    verify(remoteAnalysisService).analyze(argThat(fileNames -> fileNames.stream().anyMatch(file -> file.contains(fileName))),
       argThat(activeRules -> activeRules.size() == 1 && activeRules.stream().findFirst().get().ruleKey().rule().equals("S123")),
       argThat(x -> x.entrySet().contains(Map.entry("sonar.cs.disableRazor", "true"))),
       argThat(x -> x.shouldUseCsharpEnterprise() == expectedShouldUseCsharpEnterprise && !x.shouldUseVbEnterprise()));
@@ -185,7 +185,7 @@ class SqvsRoslynSensorTests {
 
     underTest.execute(sensorContext);
 
-    verify(analysisRequestHandler).analyze(argThat(fileNames -> fileNames.stream().anyMatch(file -> file.contains(fileName))),
+    verify(remoteAnalysisService).analyze(argThat(fileNames -> fileNames.stream().anyMatch(file -> file.contains(fileName))),
       argThat(activeRules -> activeRules.size() == 1 && activeRules.stream().findFirst().get().ruleKey().rule().equals("S456")),
       argThat(x -> x.entrySet().contains(Map.entry("sonar.vbnet.disableRazor", "false"))),
       argThat(x -> x.shouldUseVbEnterprise() == expectedShouldUseVbEnterprise && !x.shouldUseCsharpEnterprise()));
@@ -204,7 +204,7 @@ class SqvsRoslynSensorTests {
 
     underTest.execute(sensorContext);
 
-    verify(analysisRequestHandler).analyze(argThat(fileNames -> fileNames.size() == 2 &&
+    verify(remoteAnalysisService).analyze(argThat(fileNames -> fileNames.size() == 2 &&
       fileNames.stream().anyMatch(file -> file.contains("foo.cs") || file.contains("boo.vb"))),
       argThat(activeRules -> activeRules.size() == 2 &&
         activeRules.stream().anyMatch(rule -> rule.ruleKey().rule().equals("S123") || rule.ruleKey().rule().contains("S456"))),
@@ -216,7 +216,7 @@ class SqvsRoslynSensorTests {
   void analyzeCs_reportIssueForActiveRules() {
     sensorContext.fileSystem().add(csFile);
     sensorContext.setActiveRules(new ActiveRulesBuilder().addRule(csActiveRule).build());
-    when(analysisRequestHandler.analyze(
+    when(remoteAnalysisService.analyze(
       argThat(x -> x.stream().anyMatch(file -> file.contains(csFile.filename()))),
       argThat(x -> x.stream().anyMatch(cs -> cs.ruleKey().rule().contains(csActiveRule.ruleKey().rule()))),
       any(),
@@ -234,7 +234,7 @@ class SqvsRoslynSensorTests {
     sensorContext.setActiveRules(new ActiveRulesBuilder()
       .addRule(vbActiveRule)
       .build());
-    when(analysisRequestHandler.analyze(
+    when(remoteAnalysisService.analyze(
       argThat(x -> x.stream().anyMatch(file -> file.contains(vbFile.filename()))),
       argThat(x -> x.stream().anyMatch(cs -> cs.ruleKey().rule().contains(vbActiveRule.ruleKey().rule()))),
       any(),
@@ -252,7 +252,7 @@ class SqvsRoslynSensorTests {
     sensorContext.fileSystem().add(csFile2);
     sensorContext.setActiveRules(new ActiveRulesBuilder().addRule(csActiveRule).build());
     var csIssueWithSecondaryLocations = mockRoslynIssueWithSecondaryLocations(csActiveRule.ruleKey().rule(), CSharpLanguage.REPOSITORY_KEY, csFile.filename(), csFile2.filename());
-    when(analysisRequestHandler.analyze(
+    when(remoteAnalysisService.analyze(
       argThat(x -> x.stream().anyMatch(file -> file.contains(csFile.filename()))),
       argThat(x -> x.stream().anyMatch(cs -> cs.ruleKey().rule().contains(csActiveRule.ruleKey().rule()))),
       any(),
@@ -275,7 +275,7 @@ class SqvsRoslynSensorTests {
     sensorContext.fileSystem().add(vbFile2);
     sensorContext.setActiveRules(new ActiveRulesBuilder().addRule(vbActiveRule).build());
     var vbIssueWithSecondaryLocations = mockRoslynIssueWithSecondaryLocations(vbActiveRule.ruleKey().rule(), VbNetLanguage.REPOSITORY_KEY, vbFile.filename(), vbFile2.filename());
-    when(analysisRequestHandler.analyze(
+    when(remoteAnalysisService.analyze(
       argThat(x -> x.stream().anyMatch(file -> file.contains(vbFile.filename()))),
       argThat(x -> x.stream().anyMatch(cs -> cs.ruleKey().rule().contains(vbActiveRule.ruleKey().rule()))),
       any(),
@@ -299,7 +299,7 @@ class SqvsRoslynSensorTests {
       .addRule(vbActiveRule)
       .build());
     var vbWrongIssue = mockRoslynIssueWithWrongLocation(vbActiveRule.ruleKey().rule(), VbNetLanguage.REPOSITORY_KEY, vbFile.filename());
-    when(analysisRequestHandler.analyze(any(), any(), any(), any()))
+    when(remoteAnalysisService.analyze(any(), any(), any(), any()))
       .thenReturn(List.of(vbIssue, vbWrongIssue));
 
     underTest.execute(sensorContext);
@@ -316,12 +316,12 @@ class SqvsRoslynSensorTests {
     sensorContext.fileSystem().add(testFile);
     sensorContext.setActiveRules(new ActiveRulesBuilder().addRule(activeRule).build());
     var csIssueWithQuickFix = mockRoslynIssueWithQuickFixes(activeRule.ruleKey().rule(), languageRepositoryKey, testFileName, "Custom QuickFix value provided by RoslynIssue");
-    when(analysisRequestHandler.analyze(
+    when(remoteAnalysisService.analyze(
       argThat(x -> x.stream().anyMatch(file -> file.contains(testFileName))),
       argThat(x -> x.stream().anyMatch(cs -> cs.ruleKey().rule().contains(activeRule.ruleKey().rule()))),
       any(),
       argThat(x -> !x.shouldUseCsharpEnterprise() && !x.shouldUseVbEnterprise())))
-        .thenReturn(List.of(csIssueWithQuickFix));
+      .thenReturn(List.of(csIssueWithQuickFix));
 
     underTest.execute(sensorContext);
 

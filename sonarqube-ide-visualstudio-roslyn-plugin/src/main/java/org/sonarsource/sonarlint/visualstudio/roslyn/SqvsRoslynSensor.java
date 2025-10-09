@@ -36,7 +36,6 @@ import org.sonar.api.rule.RuleKey;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.visualstudio.roslyn.http.AnalyzerInfoDto;
-import org.sonarsource.sonarlint.visualstudio.roslyn.http.HttpAnalysisRequestHandler;
 import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssue;
 import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssueLocation;
 import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssueQuickFix;
@@ -44,15 +43,17 @@ import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssueQuickFi
 public class SqvsRoslynSensor implements Sensor {
 
   private static final Logger LOG = Loggers.get(SqvsRoslynSensor.class);
-  private final HttpAnalysisRequestHandler httpRequestHandler;
   private final InstanceConfigurationProvider instanceConfigurationProvider;
   private final AnalysisPropertiesProvider analysisPropertiesProvider;
+  private final RemoteAnalysisService remoteAnalysisService;
 
-  public SqvsRoslynSensor(HttpAnalysisRequestHandler httpRequestHandler, InstanceConfigurationProvider instanceConfigurationProvider,
-    AnalysisPropertiesProvider analysisPropertiesProvider) {
-    this.httpRequestHandler = httpRequestHandler;
+  public SqvsRoslynSensor(
+    InstanceConfigurationProvider instanceConfigurationProvider,
+    AnalysisPropertiesProvider analysisPropertiesProvider,
+    RemoteAnalysisService remoteAnalysisService) {
     this.instanceConfigurationProvider = instanceConfigurationProvider;
     this.analysisPropertiesProvider = analysisPropertiesProvider;
+    this.remoteAnalysisService = remoteAnalysisService;
   }
 
   private static void handle(SensorContext context, RoslynIssue roslynIssue) {
@@ -140,7 +141,7 @@ public class SqvsRoslynSensor implements Sensor {
     var activeRules = getActiveRules(context);
     var analysisProperties = analysisPropertiesProvider.getAnalysisProperties();
     var analyzerInfo = getAnalyzerInfo();
-    var roslynIssues = httpRequestHandler.analyze(inputFiles, activeRules, analysisProperties, analyzerInfo);
+    var roslynIssues = remoteAnalysisService.analyze(inputFiles, activeRules, analysisProperties, analyzerInfo);
     for (var roslynIssue : roslynIssues) {
       try {
         handle(context, roslynIssue);
@@ -148,6 +149,7 @@ public class SqvsRoslynSensor implements Sensor {
         LOG.error(String.format("Issue %s can not be saved due to ", roslynIssue.getRuleId()), exception.fillInStackTrace());
       }
     }
+
   }
 
   private Collection<String> getFilePaths(SensorContext context, FilePredicate predicate) {
