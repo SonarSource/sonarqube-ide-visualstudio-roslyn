@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.visualstudio.roslyn;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -57,7 +56,7 @@ public class SqvsRoslynSensor implements Sensor {
     this.remoteAnalysisService = remoteAnalysisService;
   }
 
-  private static void handle(SensorContext context, RoslynIssue roslynIssue) throws URISyntaxException {
+  private static void handle(SensorContext context, RoslynIssue roslynIssue) {
     var parts = roslynIssue.getRuleId().split(":");
     var ruleKey = RuleKey.of(parts[0], parts[1]);
     if (context.activeRules().find(ruleKey) != null) {
@@ -85,7 +84,7 @@ public class SqvsRoslynSensor implements Sensor {
     }
   }
 
-  private static void handleSecondaryLocations(SensorContext context, RoslynIssue diag, NewIssue newIssue) throws URISyntaxException {
+  private static void handleSecondaryLocations(SensorContext context, RoslynIssue diag, NewIssue newIssue) {
     var flows = diag.getFlows();
     for (var flow : flows) {
       for (var flowLocation : flow.getLocations()) {
@@ -153,14 +152,14 @@ public class SqvsRoslynSensor implements Sensor {
 
   }
 
-  private List<URI> getFileUris(SensorContext context, FilePredicate predicate) {
+  private static List<URI> getFileUris(SensorContext context, FilePredicate predicate) {
     return StreamSupport.stream(
       context.fileSystem().inputFiles(predicate).spliterator(), false)
       .map(InputFile::uri)
       .toList();
   }
 
-  private Collection<ActiveRule> getActiveRules(SensorContext context) {
+  private static Collection<ActiveRule> getActiveRules(SensorContext context) {
     var activeRules = new ArrayList<ActiveRule>();
     activeRules.addAll(context.activeRules().findByRepository(CSharpLanguage.REPOSITORY_KEY));
     activeRules.addAll(context.activeRules().findByRepository(VbNetLanguage.REPOSITORY_KEY));
