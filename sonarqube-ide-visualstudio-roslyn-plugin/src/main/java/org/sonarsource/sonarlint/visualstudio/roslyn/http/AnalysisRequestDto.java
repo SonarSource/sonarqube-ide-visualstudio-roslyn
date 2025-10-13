@@ -20,11 +20,13 @@
 package org.sonarsource.sonarlint.visualstudio.roslyn.http;
 
 import com.google.gson.annotations.SerializedName;
+
+import java.net.URI;
 import java.util.Collection;
 import java.util.Map;
 
 public record AnalysisRequestDto(
-  @SerializedName("FileNames") Collection<String> fileNames,
+  @SerializedName("FileUris") Collection<URI> fileUris,
   @SerializedName("ActiveRules") Collection<ActiveRuleDto> activeRules,
   @SerializedName("AnalysisProperties") Map<String, String> analysisProperties,
   @SerializedName("AnalyzerInfo") AnalyzerInfoDto analyzerInfo,

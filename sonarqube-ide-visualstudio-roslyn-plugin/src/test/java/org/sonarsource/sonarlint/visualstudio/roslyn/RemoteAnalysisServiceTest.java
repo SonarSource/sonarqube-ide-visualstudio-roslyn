@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.visualstudio.roslyn;
 
+import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -45,7 +46,11 @@ class RemoteAnalysisServiceTest {
   private HttpAnalysisRequestHandler httpAnalysisRequestHandler;
   private RemoteAnalysisService underTest;
 
-  private final Collection<String> fileNames = List.of("File1.cs", "File2.cs");
+  private final Collection<URI> fileUris = List.of(
+      URI.create("file:///C:/project/src/File1.cs"),
+      URI.create("file://localhost/$c/project/src/File2.cs")
+  );
+
   private final Collection<ActiveRule> activeRules = List.of(mock(ActiveRule.class));
   private final Map<String, String> analysisProperties = Map.of("sonar.cs.disableRazor", "true");
   private final AnalyzerInfoDto analyzerInfo = new AnalyzerInfoDto(false, false);
@@ -67,14 +72,14 @@ class RemoteAnalysisServiceTest {
     var mockIssues = mockIssues();
 
     var result = underTest.analyze(
-      fileNames,
+        fileUris,
       activeRules,
       analysisProperties,
       analyzerInfo);
 
     assertSame(mockIssues, result);
     verify(httpAnalysisRequestHandler).analyze(
-      eq(fileNames),
+      eq(fileUris),
       eq(activeRules),
       eq(analysisProperties),
       eq(analyzerInfo),

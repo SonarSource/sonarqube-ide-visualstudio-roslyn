@@ -52,13 +52,13 @@ public class HttpClientHandler {
   }
 
   public HttpResponse<String> sendAnalyzeRequest(
-    Collection<String> fileNames,
+    Collection<URI> fileUris,
     Collection<ActiveRule> activeRules,
     Map<String, String> analysisProperties,
     AnalyzerInfoDto analyzerInfo,
     UUID analysisId)
     throws IOException, InterruptedException {
-    var jsonPayload = jsonRequestBuilder.buildAnalyzeBody(fileNames, activeRules, analysisProperties, analyzerInfo, analysisId);
+    var jsonPayload = jsonRequestBuilder.buildAnalyzeBody(fileUris, activeRules, analysisProperties, analyzerInfo, analysisId);
     var request = createRequest(jsonPayload, "analyze");
     return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
   }

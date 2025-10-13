@@ -20,6 +20,8 @@
 package org.sonarsource.sonarlint.visualstudio.roslyn.http;
 
 import com.google.gson.Gson;
+
+import java.net.URI;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
@@ -34,7 +36,7 @@ public class JsonRequestBuilder {
   private static final Logger LOG = Loggers.get(JsonRequestBuilder.class);
 
   public String buildAnalyzeBody(
-    Collection<String> fileNames,
+    Collection<URI> fileUris,
     Collection<ActiveRule> activeRules,
     Map<String, String> analysisProperties,
     AnalyzerInfoDto analyzerInfo,
@@ -44,7 +46,7 @@ public class JsonRequestBuilder {
         rule.ruleKey().toString(),
         rule.params()))
       .toList();
-    var analysisRequest = new AnalysisRequestDto(fileNames, activeRuleDtos, analysisProperties, analyzerInfo, analysisId);
+    var analysisRequest = new AnalysisRequestDto(fileUris, activeRuleDtos, analysisProperties, analyzerInfo, analysisId);
 
     return new Gson().toJson(analysisRequest);
   }

@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.visualstudio.roslyn.http;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.http.HttpResponse;
 import java.util.Collection;
 import java.util.List;
@@ -42,7 +43,11 @@ import static org.mockito.Mockito.when;
 
 class HttpAnalysisRequestHandlerTests {
 
-  private final Collection<String> fileNames = List.of("File1.cs", "File2.cs");
+  private final Collection<URI> fileUris = List.of(
+      URI.create("file:///C:/project/src/File1.cs"),
+      URI.create("file://localhost/$c/project/src/File2.cs")
+  );
+
   private final Collection<ActiveRule> activeRules = List.of(mock(ActiveRule.class));
   private final Map<String, String> analysisProperties = Map.of("sonar.cs.disableRazor", "true");
   private final AnalyzerInfoDto analyzerInfo = new AnalyzerInfoDto(false, false);
@@ -62,17 +67,17 @@ class HttpAnalysisRequestHandlerTests {
   void analyze_requestSucceeds_ReturnsIssues() throws IOException, InterruptedException {
     mockResponseWithOneIssue(200);
 
-    var result = analysisRequestHandler.analyze(fileNames, activeRules, analysisProperties, analyzerInfo, analysisId);
+    var result = analysisRequestHandler.analyze(fileUris, activeRules, analysisProperties, analyzerInfo, analysisId);
 
     assertThat(result).hasSize(1);
-    verify(httpClientHandler).sendAnalyzeRequest(fileNames, activeRules, analysisProperties, analyzerInfo, analysisId);
+    verify(httpClientHandler).sendAnalyzeRequest(fileUris, activeRules, analysisProperties, analyzerInfo, analysisId);
   }
 
   @Test
   void analyze_requestSucceedsWithEmptyBody_logsAndReturnsEmptyIssues() throws IOException, InterruptedException {
     mockResponse(200, "");
 
-    var result = analysisRequestHandler.analyze(fileNames, activeRules, analysisProperties, analyzerInfo, analysisId);
+    var result = analysisRequestHandler.analyze(fileUris, activeRules, analysisProperties, analyzerInfo, analysisId);
 
     assertThat(result).isEmpty();
     assertThat(logTester.logs(LoggerLevel.WARN)).contains("No body received from the server.");
@@ -82,19 +87,19 @@ class HttpAnalysisRequestHandlerTests {
   void analyze_requestFails_returnsEmptyIssues() throws IOException, InterruptedException {
     mockResponseWithOneIssue(404);
 
-    var result = analysisRequestHandler.analyze(fileNames, activeRules, analysisProperties, analyzerInfo, analysisId);
+    var result = analysisRequestHandler.analyze(fileUris, activeRules, analysisProperties, analyzerInfo, analysisId);
 
     assertThat(result).isEmpty();
-    verify(httpClientHandler).sendAnalyzeRequest(fileNames, activeRules, analysisProperties, analyzerInfo, analysisId);
+    verify(httpClientHandler).sendAnalyzeRequest(fileUris, activeRules, analysisProperties, analyzerInfo, analysisId);
     assertThat(logTester.logs(LoggerLevel.ERROR)).contains("Response from server is 404.");
   }
 
   @Test
   void analyze_throws_logsAndReturnsEmptyIssues() throws IOException, InterruptedException {
     var exceptionMessage = "message";
-    when(httpClientHandler.sendAnalyzeRequest(fileNames, activeRules, analysisProperties, analyzerInfo, analysisId)).thenThrow(new RuntimeException(exceptionMessage));
+    when(httpClientHandler.sendAnalyzeRequest(fileUris, activeRules, analysisProperties, analyzerInfo, analysisId)).thenThrow(new RuntimeException(exceptionMessage));
 
-    var thrown = assertThrows(IllegalStateException.class, () -> analysisRequestHandler.analyze(fileNames, activeRules, analysisProperties, analyzerInfo, analysisId));
+    var thrown = assertThrows(IllegalStateException.class, () -> analysisRequestHandler.analyze(fileUris, activeRules, analysisProperties, analyzerInfo, analysisId));
 
     assertThat(thrown).hasMessageContaining("Response crashed due to: " + exceptionMessage);
   }
@@ -145,6 +150,6 @@ class HttpAnalysisRequestHandlerTests {
     var mockResponse = mock(HttpResponse.class);
     when(mockResponse.statusCode()).thenReturn(statusCode);
     when(mockResponse.body()).thenReturn(body);
-    when(httpClientHandler.sendAnalyzeRequest(fileNames, activeRules, analysisProperties, analyzerInfo, analysisId)).thenReturn(mockResponse);
+    when(httpClientHandler.sendAnalyzeRequest(fileUris, activeRules, analysisProperties, analyzerInfo, analysisId)).thenReturn(mockResponse);
   }
 }

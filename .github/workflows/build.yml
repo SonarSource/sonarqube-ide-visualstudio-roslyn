@@ -14,7 +14,7 @@ jobs:
     concurrency:
       group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
       cancel-in-progress: ${{ github.ref_name != github.event.repository.default_branch }}
-    runs-on: github-ubuntu-latest-s
+    runs-on: github-windows-latest-s
     name: Build
     permissions:
       id-token: write
