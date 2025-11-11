@@ -1,5 +1,5 @@
 sonarqube-ide-visualstudio-roslyn
-Copyright (C) 2016-2025 SonarSource SA
+Copyright (C) 2016-2025 SonarSource Sàrl
 mailto:info AT sonarsource DOT com
 
 This product includes software developed at
