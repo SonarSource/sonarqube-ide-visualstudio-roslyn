@@ -39,6 +39,7 @@ import org.sonarsource.sonarlint.visualstudio.roslyn.http.AnalyzerInfoDto;
 import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssue;
 import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssueLocation;
 import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssueQuickFix;
+import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssueTextRange;
 
 public class SqvsRoslynSensor implements Sensor {
 
@@ -102,11 +103,24 @@ public class SqvsRoslynSensor implements Sensor {
   }
 
   private static NewIssueLocation createLocation(NewIssue newIssue, RoslynIssueLocation location, InputFile inputFile) {
-    return newIssue.newLocation()
+    var message = newIssue.newLocation()
       .on(inputFile)
-      .at(inputFile.newRange(location.getTextRange().getStartLine(), location.getTextRange().getStartLineOffset(), location.getTextRange().getEndLine(),
-        location.getTextRange().getEndLineOffset()))
       .message(location.getMessage());
+
+    if (!isFileLevelRange(location.getTextRange())) {
+      message = message
+        .at(inputFile.newRange(
+            location.getTextRange().getStartLine(),
+            location.getTextRange().getStartLineOffset(),
+            location.getTextRange().getEndLine(),
+            location.getTextRange().getEndLineOffset()));
+    }
+
+    return message;
+  }
+
+  private static boolean isFileLevelRange(RoslynIssueTextRange roslynRange){
+    return roslynRange.getStartLine() == 1 && roslynRange.getStartLineOffset() == 0 && roslynRange.getEndLine() == 1 && roslynRange.getEndLineOffset() == 0;
   }
 
   @Override

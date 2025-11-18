@@ -247,6 +247,25 @@ class SqvsRoslynSensorTests {
   }
 
   @Test
+  void analyzeCs_handleFileLevelLocation() {
+    sensorContext.fileSystem().add(csFile);
+    sensorContext.setActiveRules(new ActiveRulesBuilder().addRule(csActiveRule).build());
+    var csFileLevelIssue = mockRoslynIssueWithFileLevelLocation(csActiveRule.ruleKey().rule(), CSharpLanguage.REPOSITORY_KEY, csFile.uri());
+    when(remoteAnalysisService.analyze(
+        argThat(x -> x.stream().anyMatch(file -> file.toString().contains(csFile.filename()))),
+        argThat(x -> x.stream().anyMatch(cs -> cs.ruleKey().rule().contains(csActiveRule.ruleKey().rule()))),
+        any(),
+        argThat(x -> !x.shouldUseCsharpEnterprise() && !x.shouldUseVbEnterprise())))
+        .thenReturn(List.of(csFileLevelIssue));
+
+    underTest.execute(sensorContext);
+
+    var actualIssues = sensorContext.allIssues();
+    assertThat(actualIssues).hasSize(1);
+    verifyExpectedFileLevelLocation(csFileLevelIssue.getPrimaryLocation(), actualIssues.stream().findFirst().get().primaryLocation());
+  }
+
+  @Test
   void analyzeCs_handleSecondaryLocations() {
     sensorContext.fileSystem().add(csFile);
     sensorContext.fileSystem().add(csFile2);
@@ -267,6 +286,25 @@ class SqvsRoslynSensorTests {
   @Test
   void analyzeCs_handleQuickFixes() {
     testQuickFixes(csFile, csActiveRule, CSharpLanguage.REPOSITORY_KEY);
+  }
+
+  @Test
+  void analyzeVb_handleFileLevelLocation() {
+    sensorContext.fileSystem().add(vbFile);
+    sensorContext.setActiveRules(new ActiveRulesBuilder().addRule(vbActiveRule).build());
+    var csFileLevelIssue = mockRoslynIssueWithFileLevelLocation(vbActiveRule.ruleKey().rule(), VbNetLanguage.REPOSITORY_KEY, vbFile.uri());
+    when(remoteAnalysisService.analyze(
+        argThat(x -> x.stream().anyMatch(file -> file.toString().contains(vbFile.filename()))),
+        argThat(x -> x.stream().anyMatch(cs -> cs.ruleKey().rule().contains(vbActiveRule.ruleKey().rule()))),
+        any(),
+        argThat(x -> !x.shouldUseCsharpEnterprise() && !x.shouldUseVbEnterprise())))
+        .thenReturn(List.of(csFileLevelIssue));
+
+    underTest.execute(sensorContext);
+
+    var actualIssues = sensorContext.allIssues();
+    assertThat(actualIssues).hasSize(1);
+    verifyExpectedFileLevelLocation(csFileLevelIssue.getPrimaryLocation(), actualIssues.stream().findFirst().get().primaryLocation());
   }
 
   @Test
@@ -420,6 +458,14 @@ class SqvsRoslynSensorTests {
     return roslynIssue;
   }
 
+  private RoslynIssue mockRoslynIssueWithFileLevelLocation(String ruleKey, String repository, URI filePath) {
+    var roslynIssue = mockRoslynIssue(ruleKey, repository, filePath);
+    var primaryLocation = mockIssueLocation(filePath);
+    when(roslynIssue.getPrimaryLocation()).thenReturn(primaryLocation);
+    mockTextRange(primaryLocation, 1, 1, 0, 0);
+    return roslynIssue;
+  }
+
   private void verifyExpectedRoslynIssue(RoslynIssue... roslynIssues) {
     var actualIssues = sensorContext.allIssues();
     assertThat(roslynIssues).hasSize(actualIssues.size());
@@ -457,6 +503,14 @@ class SqvsRoslynSensorTests {
     assertThat(actualIssueLocation.inputComponent().toString()).hasToString(uriFilePath);
     assertThat(actualIssueLocation.message()).isEqualTo(expectedIssueLocation.getMessage());
     verifyExpectedTextRange(actualIssueLocation.textRange(), expectedIssueLocation.getTextRange());
+  }
+
+  private void verifyExpectedFileLevelLocation(@Nullable RoslynIssueLocation expectedIssueLocation, IssueLocation actualIssueLocation) {
+    assertThat(expectedIssueLocation).isNotNull();
+    var uriFilePath = Path.of(expectedIssueLocation.getFileUri()).getFileName().toString();
+    assertThat(actualIssueLocation.inputComponent().toString()).hasToString(uriFilePath);
+    assertThat(actualIssueLocation.message()).isEqualTo(expectedIssueLocation.getMessage());
+    assertThat(actualIssueLocation.textRange()).isNull();
   }
 
   private void verifyExpectedTextRange(TextRange actualTextRange, RoslynIssueTextRange expectedTextRange) {
