@@ -70,7 +70,7 @@ public class HttpClientHandler {
     var uri = String.format("http://localhost:%s/%s", port, path);
     return HttpRequest.newBuilder()
       .uri(URI.create(uri))
-      .header("Content-Type", "application/json")
+      .header("Content-Type", "application/json; charset=utf-8")
       .header("X-Auth-Token", token)
       .POST(HttpRequest.BodyPublishers.ofString(jsonPayload))
       .build();
