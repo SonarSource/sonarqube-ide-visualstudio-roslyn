@@ -69,7 +69,7 @@ class HttpClientHandlerTests {
     assertThat(result.uri().toString()).hasToString("http://localhost:60000/myuri");
     assertThat(result.method()).isEqualTo("POST");
     HttpHeaders headers = result.headers();
-    assertThat(headers.firstValue("Content-Type").get()).hasToString("application/json");
+    assertThat(headers.firstValue("Content-Type").get()).hasToString("application/json; charset=utf-8");
     assertThat(headers.firstValue("X-Auth-Token").get()).hasToString("myToken");
   }
 
