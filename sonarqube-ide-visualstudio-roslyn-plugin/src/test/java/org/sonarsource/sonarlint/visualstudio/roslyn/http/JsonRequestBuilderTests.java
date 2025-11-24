@@ -31,6 +31,9 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.rule.RuleKey;
 import org.sonarsource.sonarlint.visualstudio.roslyn.CSharpLanguage;
@@ -123,6 +126,7 @@ class JsonRequestBuilderTests {
   }
 
   @Test
+  @EnabledOnOs(OS.WINDOWS)
   void buildBody_withSpecialCharactersInFileUris_shouldEscapeProperly() {
     String pathWithSpaces = "C:\\project\\src\\file with spaces.cs";
     String pathWithCharacters = "C:\\project\\src\\file(with)braces'and'quotes.cs";
