@@ -46,6 +46,6 @@ jobs:
         with:
           cache_save: false
           version: 2025.7.12
-      - uses: SonarSource/ci-github-actions/promote@v1
+      - uses: SonarSource/ci-github-actions/promote@1.3.4
         with:
           promote-pull-request: true
