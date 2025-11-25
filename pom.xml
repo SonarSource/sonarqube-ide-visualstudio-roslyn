@@ -42,7 +42,7 @@
     <gitRepositoryName>sonarqube-ide-visualstudio-roslyn</gitRepositoryName>
     <artifactsToPublish>${project.groupId}:sonarqube-ide-visualstudio-roslyn-plugin:jar</artifactsToPublish>
     <junit.version>5.9.1</junit.version>
-    <sonarlint-core.version>10.24.0.81415</sonarlint-core.version>
+    <sonarlint-core.version>10.37.1.83894</sonarlint-core.version>
     <jdk.min.version>11</jdk.min.version>
     <license.name>GNU LGPL v3</license.name>
     <maven.compiler.release>17</maven.compiler.release>
