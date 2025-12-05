@@ -57,7 +57,7 @@
     <dependency>
       <groupId>com.google.code.gson</groupId>
       <artifactId>gson</artifactId>
-      <version>2.13.1</version>
+      <version>2.13.2</version>
     </dependency>
 
     <!-- test dependencies -->
@@ -82,7 +82,7 @@
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <version>1.5.19</version>
+      <version>1.5.21</version>
       <scope>test</scope>
     </dependency>
     <dependency>
