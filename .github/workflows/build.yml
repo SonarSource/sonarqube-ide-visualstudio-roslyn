@@ -24,7 +24,7 @@ jobs:
       - uses: jdx/mise-action@146a28175021df8ca24f8ee1828cc2a60f980bd5 # v3.5.1
         with:
           version: 2025.7.12
-      - uses: SonarSource/ci-github-actions/build-maven@master
+      - uses: SonarSource/ci-github-actions/build-maven@c25d440672c0f21574eda6cad861163cc07a0def # v1.3.9
         with:
           deploy-pull-request: true
           artifactory-reader-role: private-reader
