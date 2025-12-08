@@ -19,6 +19,10 @@
  */
 package org.sonarsource.sonarlint.visualstudio.roslyn;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import javax.annotation.Nullable;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.TextRange;
 import org.sonar.api.batch.rule.Severity;
@@ -30,10 +34,6 @@ import org.sonar.api.batch.sensor.issue.fix.NewTextEdit;
 import org.sonar.api.batch.sensor.issue.internal.DefaultIssueLocation;
 import org.sonar.api.issue.impact.SoftwareQuality;
 import org.sonar.api.rule.RuleKey;
-
-import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.List;
 
 // copied from https://github.com/SonarSource/sonarlint-omnisharp/blob/3c584bb30ff7bece45e7399699befa30c58b3605/omnisharp-plugin/src/test/java/org/sonarsource/sonarlint/omnisharp/OmnisharpSensorTests.java#L562
 public class MockSonarLintIssue implements NewIssue {
@@ -103,6 +103,21 @@ public class MockSonarLintIssue implements NewIssue {
   @Override
   public NewIssue setCodeVariants(@Nullable Iterable<String> iterable) {
     return null;
+  }
+
+  @Override
+  public NewIssue addInternalTag(@Nullable String s) {
+    throw new UnsupportedOperationException("InternalTags are not supported by SonarQube for IDE.");
+  }
+
+  @Override
+  public NewIssue addInternalTags(@Nullable Collection<String> collection) {
+    throw new UnsupportedOperationException("InternalTags are not supported by SonarQube for IDE.");
+  }
+
+  @Override
+  public NewIssue setInternalTags(@Nullable Collection<String> collection) {
+    throw new UnsupportedOperationException("InternalTags are not supported by SonarQube for IDE.");
   }
 
   @Override
