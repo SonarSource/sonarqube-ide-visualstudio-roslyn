@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       - uses: jdx/mise-action@146a28175021df8ca24f8ee1828cc2a60f980bd5 # v3.5.1
         with:
-          version: 2025.7.12
+          version: 2026.1.0
       - uses: SonarSource/ci-github-actions/build-maven@c86cc657b13bf2e89567e51a7454a6ede8204c69 # 1.3.17
         with:
           deploy-pull-request: true
@@ -45,7 +45,7 @@ jobs:
       - uses: jdx/mise-action@146a28175021df8ca24f8ee1828cc2a60f980bd5 # v3.5.1
         with:
           cache_save: false
-          version: 2025.7.12
+          version: 2026.1.0
       - uses: SonarSource/ci-github-actions/promote@c86cc657b13bf2e89567e51a7454a6ede8204c69 # 1.3.17
         with:
           promote-pull-request: true
