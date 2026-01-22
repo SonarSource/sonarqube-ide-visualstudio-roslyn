@@ -31,6 +31,8 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.rule.RuleKey;
 import org.sonarsource.sonarlint.visualstudio.roslyn.CSharpLanguage;
@@ -123,6 +125,7 @@ class JsonRequestBuilderTests {
   }
 
   @Test
+  @DisabledOnOs(OS.LINUX) // Windows file paths in this test are not handled correctly on linux
   void buildBody_withSpecialCharactersInFileUris_shouldEscapeProperly() {
     String pathWithSpaces = "C:\\project\\src\\file with spaces.cs";
     String pathWithCharacters = "C:\\project\\src\\file(with)braces'and'quotes.cs";
@@ -145,6 +148,23 @@ class JsonRequestBuilderTests {
     assertThat(URI.create(serializedFileUris.get(0).getAsString())).isEqualTo(fileUris.get(0));
     assertThat(URI.create(serializedFileUris.get(1).getAsString())).isEqualTo(fileUris.get(1));
     assertThat(URI.create(serializedFileUris.get(2).getAsString())).isEqualTo(fileUris.get(2));
+  }
+
+  @Test
+  void buildBody_withSpecialCharactersInFileUris_containsExpectedEscapeSequencesInJson() {
+    String pathWithSpaces = "file with spaces.cs";
+    String pathWithCharacters = "file(with)braces'and'quotes.cs";
+    var fileUris = Arrays.asList(
+        Path.of(pathWithSpaces).toUri(),
+        Path.of(pathWithCharacters).toUri()
+    );
+    var activeRules = new ArrayList<ActiveRule>();
+    var analysisProperties = Map.<String, String>of();
+    var analyzerInfo = new AnalyzerInfoDto(false, false);
+
+    var result = jsonParser.buildAnalyzeBody(fileUris, activeRules, analysisProperties, analyzerInfo, analysisId);
+
+    assertThat(result).contains("file%20with%20spaces.cs", "file(with)braces\\u0027and\\u0027quotes.cs");
   }
 
   @Test
