@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: github-windows-latest-s
+    runs-on: github-ubuntu-latest-s
     name: Build
     permissions:
       id-token: write
