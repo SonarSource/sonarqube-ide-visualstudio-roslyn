@@ -4,8 +4,6 @@ on:
     workflows: [ "Build" ]
     types:
       - completed
-    branches:
-      - master
 
 permissions:
   id-token: write
