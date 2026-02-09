@@ -5,30 +5,31 @@ on:
     - cron: '0 4 * * *'
   workflow_dispatch:
 
-jobs:
-  build:
-    runs-on: github-ubuntu-latest-s
-    name: Build
-    permissions:
-      id-token: write
-      contents: write
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: jdx/mise-action@6d1e696aa24c1aa1bcc1adea0212707c71ab78a8 # v3.6.1
-        with:
-          version: 2026.2.7
-      - uses: SonarSource/ci-github-actions/build-maven@b8cd7f80a4c7b2e2a739a455629d9a619fb059d0 # 1.3.22
-        with:
-          run-shadow-scans: true
-          artifactory-reader-role: private-reader
-          artifactory-deployer-role: qa-deployer
+permissions:
+  id-token: write
 
-      - name: Run IRIS Analysis
-        uses: SonarSource/unified-dogfooding-actions/run-iris@v1
+jobs:
+  notify:
+    runs-on: github-ubuntu-latest-s
+    name: Send Slack Notification
+    steps:
+      - name: Vault Secrets
+        id: secrets
+        uses: SonarSource/vault-action-wrapper@v3
         with:
-          primary_project_key: "SonarSource_sonarqube-ide-visualstudio-roslyn"
-          primary_platform: "Next"
-          shadow1_project_key: "SonarSource_sonarqube-ide-visualstudio-roslyn"
-          shadow1_platform: "SQC-EU"
-          shadow2_project_key: "SonarSource_sonarqube-ide-visualstudio-roslyn"
-          shadow2_platform: "SQC-US"
+          secrets: |
+            development/kv/data/slack token | SLACK_BOT_TOKEN;
+
+      - name: Slack Notification on Failure
+        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+        with:
+          method: chat.postMessage
+          token: ${{ fromJSON(steps.secrets.outputs.vault).SLACK_BOT_TOKEN }}
+          payload: |
+            channel: squad-ide-slcore-bots
+            text: "Workflow failed in ${{ github.repository }}"
+            blocks:
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: ":x: *Repository:* ${{ github.repository }}\n*Branch:* ${{ github.event.workflow_run.head_branch }}\n*Workflow:* ${{ github.event.workflow_run.name }}\n*Run:* <${{ github.event.workflow_run.html_url }}|#${{ github.event.workflow_run.run_number }}>"
