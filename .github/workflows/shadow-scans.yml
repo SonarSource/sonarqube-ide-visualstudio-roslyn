@@ -26,7 +26,7 @@ jobs:
           method: chat.postMessage
           token: ${{ fromJSON(steps.secrets.outputs.vault).SLACK_BOT_TOKEN }}
           payload: |
-            channel: squad-ide-slcore-bots
+            channel: squad-ide-flow-interrupts
             text: "Workflow failed in ${{ github.repository }}"
             blocks:
               - type: "section"
