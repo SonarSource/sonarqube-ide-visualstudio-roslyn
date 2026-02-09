@@ -1,9 +1,13 @@
 name: Notify Failure
 on:
+  workflow_dispatch:
   workflow_run:
     workflows: [ "Build" ]
     types:
       - completed
+    branches:
+      - master
+      - vn/test-notifications
 
 permissions:
   id-token: write
