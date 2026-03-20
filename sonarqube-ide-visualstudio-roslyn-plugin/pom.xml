@@ -18,8 +18,8 @@
   <properties>
     <!-- The following properties should match the pom.xml of sonar-dotnet for the given analyzer version -->
     <sonar.analyzer.commons>2.21.0.4626</sonar.analyzer.commons>
-    <sonar.version>13.4.2.4284</sonar.version>
-    <sonar.api.impl.version>26.2.0.119303</sonar.api.impl.version>
+    <sonar.version>13.5.0.4319</sonar.version>
+    <sonar.api.impl.version>26.3.0.120487</sonar.api.impl.version>
 
     <maven.test.redirectTestOutputToFile>true</maven.test.redirectTestOutputToFile>
     <sonarAnalyzer.directory>${project.build.directory}/analyzer</sonarAnalyzer.directory>
@@ -76,7 +76,7 @@
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <version>1.5.29</version>
+      <version>1.5.32</version>
       <scope>test</scope>
     </dependency>
     <dependency>
