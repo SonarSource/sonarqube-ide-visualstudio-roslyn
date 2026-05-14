@@ -32,8 +32,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonar.api.batch.rule.ActiveRule;
+import org.slf4j.event.Level;
+import org.sonar.api.testfixtures.log.LogAndArguments;
 import org.sonar.api.testfixtures.log.LogTesterJUnit5;
-import org.sonar.api.utils.log.LoggerLevel;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -80,7 +81,7 @@ class HttpAnalysisRequestHandlerTests {
     var result = analysisRequestHandler.analyze(fileUris, activeRules, analysisProperties, analyzerInfo, analysisId);
 
     assertThat(result).isEmpty();
-    assertThat(logTester.logs(LoggerLevel.WARN)).contains("No body received from the server.");
+    assertThat(logTester.getLogs(Level.WARN)).extracting(LogAndArguments::getRawMsg).contains("No body received from the server.");
   }
 
   @Test
@@ -91,7 +92,7 @@ class HttpAnalysisRequestHandlerTests {
 
     assertThat(result).isEmpty();
     verify(httpClientHandler).sendAnalyzeRequest(fileUris, activeRules, analysisProperties, analyzerInfo, analysisId);
-    assertThat(logTester.logs(LoggerLevel.ERROR)).contains("Response from server is 404.");
+    assertThat(logTester.getLogs(Level.ERROR)).extracting(LogAndArguments::getRawMsg).contains("Response from server is 404.");
   }
 
   @Test
@@ -126,7 +127,7 @@ class HttpAnalysisRequestHandlerTests {
     analysisRequestHandler.cancelAnalysis(analysisId);
 
     verify(httpClientHandler).sendCancelRequest(analysisId);
-    assertThat(logTester.logs(LoggerLevel.ERROR)).contains("Failed to cancel analysis due to: " + exceptionMessage);
+    assertThat(logTester.getLogs(Level.ERROR)).extracting(LogAndArguments::getRawMsg).contains("Failed to cancel analysis due to: " + exceptionMessage);
   }
 
   @Test
@@ -139,7 +140,7 @@ class HttpAnalysisRequestHandlerTests {
     analysisRequestHandler.cancelAnalysis(analysisId);
 
     verify(httpClientHandler).sendCancelRequest(analysisId);
-    assertThat(logTester.logs(LoggerLevel.ERROR)).contains("Response from cancel request is 404.");
+    assertThat(logTester.getLogs(Level.ERROR)).extracting(LogAndArguments::getRawMsg).contains("Response from cancel request is 404.");
   }
 
   private void mockResponseWithOneIssue(int statusCode) throws IOException, InterruptedException {

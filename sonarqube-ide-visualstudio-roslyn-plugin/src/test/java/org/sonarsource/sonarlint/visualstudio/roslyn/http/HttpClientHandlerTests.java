@@ -26,13 +26,14 @@ import java.net.http.HttpHeaders;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.sonar.api.batch.rule.ActiveRule;
 import org.sonar.api.batch.sensor.SensorContext;
-import org.sonar.api.config.Settings;
+import org.sonar.api.config.Configuration;
 import org.sonar.api.rule.RuleKey;
 import org.sonarsource.sonarlint.visualstudio.roslyn.SqvsRoslynPluginPropertyDefinitions;
 
@@ -112,9 +113,9 @@ class HttpClientHandlerTests {
   }
 
   private void mockSettings(String port, String token) {
-    var mockSettings = mock(Settings.class);
-    when(mockSettings.getString(SqvsRoslynPluginPropertyDefinitions.getServerPort())).thenReturn(port);
-    when(mockSettings.getString(SqvsRoslynPluginPropertyDefinitions.getServerToken())).thenReturn(token);
-    when(sensorContext.settings()).thenReturn(mockSettings);
+    var mockConfig = mock(Configuration.class);
+    when(mockConfig.get(SqvsRoslynPluginPropertyDefinitions.getServerPort())).thenReturn(Optional.ofNullable(port));
+    when(mockConfig.get(SqvsRoslynPluginPropertyDefinitions.getServerToken())).thenReturn(Optional.ofNullable(token));
+    when(sensorContext.config()).thenReturn(mockConfig);
   }
 }

@@ -64,9 +64,9 @@ public class HttpClientHandler {
   }
 
   public HttpRequest createRequest(String jsonPayload, String path) {
-    var settings = context.settings();
-    var port = settings.getString(SqvsRoslynPluginPropertyDefinitions.getServerPort());
-    var token = settings.getString(SqvsRoslynPluginPropertyDefinitions.getServerToken());
+    var config = context.config();
+    var port = config.get(SqvsRoslynPluginPropertyDefinitions.getServerPort()).orElse(null);
+    var token = config.get(SqvsRoslynPluginPropertyDefinitions.getServerToken()).orElse(null);
     var uri = String.format("http://localhost:%s/%s", port, path);
     return HttpRequest.newBuilder()
       .uri(URI.create(uri))
