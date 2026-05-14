@@ -81,7 +81,7 @@ class HttpAnalysisRequestHandlerTests {
     var result = analysisRequestHandler.analyze(fileUris, activeRules, analysisProperties, analyzerInfo, analysisId);
 
     assertThat(result).isEmpty();
-    assertThat(logTester.getLogs(Level.WARN)).extracting(LogAndArguments::getRawMsg).contains("No body received from the server.");
+    assertThat(logTester.getLogs(Level.WARN)).extracting(LogAndArguments::getFormattedMsg).contains("No body received from the server.");
   }
 
   @Test
@@ -92,7 +92,7 @@ class HttpAnalysisRequestHandlerTests {
 
     assertThat(result).isEmpty();
     verify(httpClientHandler).sendAnalyzeRequest(fileUris, activeRules, analysisProperties, analyzerInfo, analysisId);
-    assertThat(logTester.getLogs(Level.ERROR)).extracting(LogAndArguments::getRawMsg).contains("Response from server is 404.");
+    assertThat(logTester.getLogs(Level.ERROR)).extracting(LogAndArguments::getFormattedMsg).contains("Response from server is 404.");
   }
 
   @Test
@@ -127,7 +127,7 @@ class HttpAnalysisRequestHandlerTests {
     analysisRequestHandler.cancelAnalysis(analysisId);
 
     verify(httpClientHandler).sendCancelRequest(analysisId);
-    assertThat(logTester.getLogs(Level.ERROR)).extracting(LogAndArguments::getRawMsg).contains("Failed to cancel analysis due to: " + exceptionMessage);
+    assertThat(logTester.getLogs(Level.ERROR)).extracting(LogAndArguments::getFormattedMsg).contains("Failed to cancel analysis due to: " + exceptionMessage);
   }
 
   @Test
@@ -140,7 +140,7 @@ class HttpAnalysisRequestHandlerTests {
     analysisRequestHandler.cancelAnalysis(analysisId);
 
     verify(httpClientHandler).sendCancelRequest(analysisId);
-    assertThat(logTester.getLogs(Level.ERROR)).extracting(LogAndArguments::getRawMsg).contains("Response from cancel request is 404.");
+    assertThat(logTester.getLogs(Level.ERROR)).extracting(LogAndArguments::getFormattedMsg).contains("Response from cancel request is 404.");
   }
 
   private void mockResponseWithOneIssue(int statusCode) throws IOException, InterruptedException {
