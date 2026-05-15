@@ -27,13 +27,10 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.sonar.api.batch.rule.ActiveRule;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.api.sonarlint.SonarLintSide;
 
 @SonarLintSide(lifespan = "INSTANCE")
 public class JsonRequestBuilder {
-  private static final Logger LOG = Loggers.get(JsonRequestBuilder.class);
 
   public String buildAnalyzeBody(
     Collection<URI> fileUris,
