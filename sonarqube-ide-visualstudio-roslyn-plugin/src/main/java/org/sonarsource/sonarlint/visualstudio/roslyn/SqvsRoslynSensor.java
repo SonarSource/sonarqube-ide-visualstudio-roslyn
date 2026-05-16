@@ -33,8 +33,8 @@ import org.sonar.api.batch.sensor.SensorDescriptor;
 import org.sonar.api.batch.sensor.issue.NewIssue;
 import org.sonar.api.batch.sensor.issue.NewIssueLocation;
 import org.sonar.api.rule.RuleKey;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sonarsource.sonarlint.visualstudio.roslyn.http.AnalyzerInfoDto;
 import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssue;
 import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssueLocation;
@@ -43,7 +43,7 @@ import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssueTextRan
 
 public class SqvsRoslynSensor implements Sensor {
 
-  private static final Logger LOG = Loggers.get(SqvsRoslynSensor.class);
+  private static final Logger LOG = LoggerFactory.getLogger(SqvsRoslynSensor.class);
   private final InstanceConfigurationProvider instanceConfigurationProvider;
   private final AnalysisPropertiesProvider analysisPropertiesProvider;
   private final RemoteAnalysisService remoteAnalysisService;

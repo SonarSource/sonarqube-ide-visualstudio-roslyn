@@ -28,14 +28,14 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.sonar.api.batch.rule.ActiveRule;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.visualstudio.roslyn.protocol.RoslynIssue;
 
 @SonarLintSide
 public class HttpAnalysisRequestHandler {
-  private static final Logger LOG = Loggers.get(HttpAnalysisRequestHandler.class);
+  private static final Logger LOG = LoggerFactory.getLogger(HttpAnalysisRequestHandler.class);
   private final HttpClientHandler httpClientHandler;
 
   public HttpAnalysisRequestHandler(HttpClientHandler httpClientHandler) {
