@@ -19,7 +19,7 @@
  */
 package org.sonarsource.sonarlint.visualstudio.roslyn;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import java.util.concurrent.CountDownLatch;
