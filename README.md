@@ -11,7 +11,7 @@
 
 # Roslyn integration for SonarQube for IDE in Visual Studio
 
-This plugin uses the Sonar plugin API to integrate Roslyn analysis between SonarQube for IDE in Visual Studio and the shared IDE core library. It is implementation tooling for developers maintaining the Visual Studio integration.
+This plugin uses the Sonar plugin API to integrate Roslyn analysis between SonarQube for IDE in Visual Studio and the shared IDE core library (SLCore). It is implementation tooling for developers maintaining the Visual Studio integration.
 
 To learn more about Sonar products, visit the [Sonar website](https://www.sonarsource.com/products/sonarqube/ide/).
 
