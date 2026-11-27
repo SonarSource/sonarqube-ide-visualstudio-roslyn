@@ -20,11 +20,11 @@ jobs:
       id-token: write
       contents: write
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
       - uses: SonarSource/mise-action-wrapper@65aa289d3f408f4999d13a52a14cde4f54b48442 # 2.0.0
         with:
           version: 2026.5.1
-      - uses: SonarSource/ci-github-actions/build-maven@9456e3aab93a6c6d0c459b977aaa594bda102e29 # 1.4.0
+      - uses: SonarSource/ci-github-actions/build-maven@17f30ff8fb318932377ac14a97e728f57300b12d # 1.8.11
         with:
           deploy-pull-request: true
           artifactory-reader-role: private-reader
@@ -41,12 +41,12 @@ jobs:
       id-token: write
       contents: write
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
       - uses: step-security/mise-action@a225bbd7c202ddf57dd76dff22bb7992f6314173 # v5.1.2
         with:
           persist_github_token: true
           cache_save: false
           version: 2026.5.1
-      - uses: SonarSource/ci-github-actions/promote@9456e3aab93a6c6d0c459b977aaa594bda102e29 # 1.4.0
+      - uses: SonarSource/ci-github-actions/promote@17f30ff8fb318932377ac14a97e728f57300b12d # 1.8.11
         with:
           promote-pull-request: true
